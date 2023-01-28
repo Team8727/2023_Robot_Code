@@ -11,14 +11,14 @@ import frc.robot.Constants.kSensors;
 
 public class Indications extends SubsystemBase {
 
-  private AddressableLED m_LedStrip;
-  private AddressableLEDBuffer m_LedData;
+  private AddressableLED ledStrip;
+  private AddressableLEDBuffer ledData;
 
   public Indications() {
-    m_LedStrip = new AddressableLED(kSensors.ledPort);
-    m_LedData = new AddressableLEDBuffer(kSensors.ledLength);
-    m_LedStrip.setData(m_LedData);
-    m_LedStrip.start();
+    ledStrip = new AddressableLED(kSensors.ledPort);
+    ledData = new AddressableLEDBuffer(kSensors.ledLength);
+    ledStrip.setData(ledData);
+    ledStrip.start();
   }
 
   @Override
