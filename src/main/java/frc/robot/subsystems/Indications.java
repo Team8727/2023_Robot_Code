@@ -58,7 +58,8 @@ public class Indications extends SubsystemBase {
 
      } else {
      //color 2
-     m_ledData.setRGB(i, color2.red, color2.green, color2.blue);
+     m_LedData.setRGB(i, color2.red, color2.green, color2.blue);
+
      }
    }
    //offset to "move" the pattern
