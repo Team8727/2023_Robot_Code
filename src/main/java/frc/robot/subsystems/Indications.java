@@ -48,7 +48,8 @@ public class Indications extends SubsystemBase {
 
  public void pattern2(RGB color1,RGB color2, float colorSpeed){
    // 2 Colored Pattern
-    var int patternSize = 2;
+   int patternSize = 2;
+
     int offset = 0;
     for (var i = 1; i < m_LedData.getLength(); i++) {
     //color 1
