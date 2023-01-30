@@ -52,7 +52,8 @@ public class Indications extends SubsystemBase {
    for (var i = 1; i < m_ledData.getLength(); i++) {
     //color 1
      if ((i + offset) % patternSize) < 1 {
-     m_ledData.setRGB(i, color1.red, color1.green, color1.blue);
+     m_LedData.setRGB(i, color1.red, color1.green, color1.blue);
+
      } else {
      //color 2
      m_ledData.setRGB(i, color2.red, color2.green, color2.blue);
