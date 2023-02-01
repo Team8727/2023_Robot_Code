@@ -40,7 +40,7 @@ public class Indications extends SubsystemBase {
  public Indications() {
    ledStrip = new AddressableLED(kSensors.ledPort);
    ledData = new AddressableLEDBuffer(kSensors.ledLength);
-   ledStrip.setData(m_LedData);
+   ledStrip.setData(ledData);
    ledStrip.start();
  }
 
