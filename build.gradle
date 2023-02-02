@@ -143,32 +143,32 @@ spotless {
 }
 
 tasks.register("writeGitData") {
-   // Define an output stream to write to instead of terminal
-   def branchout = new ByteArrayOutputStream()
-   def commitout = new ByteArrayOutputStream()
+    // Define an output stream to write to instead of terminal
+    def branchout = new ByteArrayOutputStream()
+    def commitout = new ByteArrayOutputStream()
 
-   // Execute the git command
-   exec {
-      commandLine "git", "rev-parse", "--abbrev-ref", "HEAD"
-      // Write to the output stream instead of terminal
-      standardOutput = branchout
-   }
-   // Execute the git command
-   exec {
-      commandLine "git", "rev-parse", "--short", "HEAD"
-      // Write to the output stream instead of terminal
-      standardOutput = commitout
-   }
-   // Parse the output into a string
-   def data = branchout.toString().trim() + ' ' + commitout.toString().trim()
+    // Execute the git command
+    exec {
+        commandLine "git", "rev-parse", "--abbrev-ref", "HEAD"
+        // Write to the output stream instead of terminal
+        standardOutput = branchout
+    }
+    // Execute the git command
+    exec {
+        commandLine "git", "rev-parse", "--short", "HEAD"
+        // Write to the output stream instead of terminal
+        standardOutput = commitout
+    }
+    // Parse the output into a string
+    def data = branchout.toString().trim() + ' ' + commitout.toString().trim()
 
-   // Create a new file
-   new File(
-      // Join project directory and deploy directory
-      projectDir.toString() + "/src/main/deploy",
-      // File name to write to
-      "gitdata.txt"
-   ).text = data // Set the contents of the file to the variable branch
+    // Create a new file
+    new File(
+            // Join project directory and deploy directory
+            projectDir.toString() + "/src/main/deploy",
+            // File name to write to
+            "gitdata.txt"
+            ).text = data // Set the contents of the file to the variable branch
 }
 
 deploy.targets.roborio.artifacts.frcStaticFileDeploy.dependsOn(writeGitData)
