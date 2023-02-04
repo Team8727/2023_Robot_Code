@@ -29,10 +29,12 @@ public class Indications extends SubsystemBase {
     ledStrip.start();
   }
 
-  public void pattern2(float colorSpeed, RGB color1, RGB color2) {
+ public void pattern2(int firstLed, int lastLed, float colorSpeed, RGB color1, RGB color2) {
     // 2 Colored Pattern
+    
     int patternSize = 2;
-    for (var i = 1; i < ledData.getLength(); i++) {
+    // sets all of the LEDs between the first LED and the last LED indicated.
+    for (int i = firstLed; i <= lastLed; i++) {
       // color 1
       if (((i + offset) % patternSize) < 1) {
         ledData.setRGB(i, color1.red, color1.green, color1.blue);
