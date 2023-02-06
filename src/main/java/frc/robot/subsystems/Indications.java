@@ -12,16 +12,12 @@ public class Indications extends SubsystemBase {
     public int start;
     public int end;
 
-    public IndicatorSection (int start, int end){
+    public IndicatorSection(int start, int end) {
       this.start = start;
       this.end = end;
-
     }
-
   }
-  
-  
-  
+
   public class RGB {
     public int red;
     public int green;
@@ -32,8 +28,6 @@ public class Indications extends SubsystemBase {
       this.green = green;
       this.blue = blue;
     }
-
-  
   }
 
   private AddressableLED ledStrip;
@@ -46,14 +40,15 @@ public class Indications extends SubsystemBase {
     ledStrip.start();
   }
 
- public void monotone(IndicatorSection subsection, RGB color){
-  for (int i = subsection.start; i <= subsection.end; i++) {
-    ledData.setRGB(i, color.red, color.green, color.blue);
+  public void monotone(IndicatorSection subsection, RGB color) {
+    for (int i = subsection.start; i <= subsection.end; i++) {
+      ledData.setRGB(i, color.red, color.green, color.blue);
+    }
   }
- }
- public void alternate(IndicatorSection subsection, float interval, RGB color1, RGB color2) {
+
+  public void alternate(IndicatorSection subsection, float interval, RGB color1, RGB color2) {
     // 2 Colored Pattern
-    
+
     int patternSize = 2;
 
     // sets all of the LEDs between the first LED and the last LED indicated.
@@ -68,35 +63,32 @@ public class Indications extends SubsystemBase {
       }
     }
   }
-  public void flashing(IndicatorSection subsection, RGB color, int interval){
-   for (int i = subsection.start; i <= subsection.end; i++) {
+
+  public void flashing(IndicatorSection subsection, RGB color, int interval) {
+    for (int i = subsection.start; i <= subsection.end; i++) {
       // turns the LEDs onn if the interval is one
       if ((interval % 2) == 1) {
         ledData.setRGB(i, color.red, color.green, color.blue);
       } else {
         // sets the LEDs off
-        ledData.setRGB(i,0,0,0);
+        ledData.setRGB(i, 0, 0, 0);
       }
     }
-
   }
 
   public void runway(IndicatorSection subsection, RGB color, int interval) {
     // finds many LEDS are in the subsection
-    int sectionSize = subsection.end-subsection.start;
-    
+    int sectionSize = subsection.end - subsection.start;
+
     for (int i = subsection.start; i <= subsection.end; i++) {
-    //finds where is the sequence the "chasing" LED is
-    if ((i % sectionSize) == interval){
-      ledData.setRGB(i, color.red, color.green, color.blue);
-    }else{
-      ledData.setRGB(i,0,0,0);
-    }
-
-
+      // finds where is the sequence the "chasing" LED is
+      if ((i % sectionSize) == interval) {
+        ledData.setRGB(i, color.red, color.green, color.blue);
+      } else {
+        ledData.setRGB(i, 0, 0, 0);
+      }
     }
   }
-
 
   @Override
   public void periodic() {
