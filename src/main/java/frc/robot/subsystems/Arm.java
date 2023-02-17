@@ -52,4 +52,19 @@ public class Arm extends SubsystemBase {
     double xG = Dimensions.Lp * Math.cos(theta_s) + Dimensions.Lf * Math.cos(theta_e);
     double yG = Dimensions.Lp * Math.sin(theta_s) + Dimensions.Lf * Math.sin(theta_e);
   }
+
+  public void inverseKinematics(double xG, double yG) {
+    double r = Math.sqrt(xG * xG + yG * yG);
+    double alpha = Math.atan(yG / xG);
+    double theta_s =
+        alpha
+            + Math.acos(
+                (r * r + Dimensions.Lp * Dimensions.Lp - Dimensions.Lf * Dimensions.Lf)
+                    / (2 * r * Dimensions.Lp));
+    double theta_e =
+        alpha
+            - Math.acos(
+                (r * r + Dimensions.Lf * Dimensions.Lf - Dimensions.Lp * Dimensions.Lp)
+                    / (2 * r * Dimensions.Lf));
+  }
 }
