@@ -12,6 +12,7 @@ public class Indications extends SubsystemBase {
   private AddressableLED armLEDs;
   private AddressableLEDBuffer armLEDsBuffer;
   private LEDSubStrip proximalLeftStrip;
+  private int tick = 0;
 
   public Indications() {
     // TODO Add constants for start and end locations and move strip constants out of kSensors
@@ -63,7 +64,8 @@ public class Indications extends SubsystemBase {
 
     for (int i = 0; i <= section.getLength(); i++) {
       // finds where is the sequence the "chasing" LED is
-      if (i%sectionSize>=(interval+sectionSize)/200 and (i%sectionSize)+1<(interval+sectionSize)/sectionSize) {
+      if (i % sectionSize >= (interval + sectionSize) / kIndications.maxCount
+          && (i % sectionSize) + 1 < (interval + sectionSize) / kIndications.maxCount) {
         armLEDsBuffer.setLED(i, color);
       } else {
         armLEDsBuffer.setRGB(i, 0, 0, 0);
@@ -74,6 +76,12 @@ public class Indications extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    tick++;
+    if (tick >= kIndications.maxCount) {
+      tick = 0;
+    }
+
+    armLEDs.setData(armLEDsBuffer);
   }
 
   @Override
