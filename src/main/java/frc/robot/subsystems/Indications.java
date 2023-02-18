@@ -57,13 +57,13 @@ public class Indications extends SubsystemBase {
     }
   }
 
-  public void runway(LEDSubStrip section, Color color, int interval) {
+  public void runaway(LEDSubStrip section, Color color, int interval) {
     // finds many LEDS are in the section
     int sectionSize = section.getLength();
 
     for (int i = 0; i <= section.getLength(); i++) {
       // finds where is the sequence the "chasing" LED is
-      if ((i % sectionSize) == interval) {
+      if (i%sectionSize>=(interval+sectionSize)/200 and (i%sectionSize)+1<(interval+sectionSize)/sectionSize) {
         armLEDsBuffer.setLED(i, color);
       } else {
         armLEDsBuffer.setRGB(i, 0, 0, 0);
