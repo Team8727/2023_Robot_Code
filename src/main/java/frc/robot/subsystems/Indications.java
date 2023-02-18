@@ -54,7 +54,7 @@ public class Indications extends SubsystemBase {
         armLEDsBuffer.setLED(i, color);
       } else {
         // sets the LEDs off
-        armLEDsBuffer.setRGB(i, 0, 0, 0);
+        armLEDsBuffer.setLED(i, Color.kBlack);
       }
     }
   }
@@ -74,15 +74,17 @@ public class Indications extends SubsystemBase {
     }
   }
 
-  private void rainbow(LEDSubStrip section, int interval) {
+  private void flashingRainbow(LEDSubStrip section, int interval) {
     // Altered version of the rainbow script from the first documentation
     for (var i = 0; i < section.getLength(); i++) {
-
-      final var hue =
-          (interval * 180 / (kIndications.maxTick) + (i * 180 / m_lsectionedBuffer.getLength()))
-              % 180;
-
-      armLEDsBuffer.setHSV(i, hue, 255, 128);
+      if ((interval / 30) % 2 == 0) {
+        final var hue =
+            (interval * 180 / (kIndications.maxTick) + (i * 180 / m_lsectionedBuffer.getLength()))
+                % 180;
+        armLEDsBuffer.setHSV(i, hue, 255, 128);
+      } else {
+        armLEDsBuffer.setLED(i, Color.kBlack);
+      }
     }
   }
 
@@ -100,7 +102,7 @@ public class Indications extends SubsystemBase {
     if (partyMode == false) {
       alternate(proximalLeftStrip, tick, Color.kLime, Color.kBlack);
     } else {
-      rainbow(proximalLeftStrip, tick);
+      flashingRainbow(proximalLeftStrip, tick);
     }
     armLEDs.setData(armLEDsBuffer);
   }
