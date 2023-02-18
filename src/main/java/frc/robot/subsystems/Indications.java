@@ -79,8 +79,7 @@ public class Indications extends SubsystemBase {
     for (var i = 0; i < section.getLength(); i++) {
       if ((interval / 30) % 2 == 0) {
         final var hue =
-            (interval * 180 / (kIndications.maxTick) + (i * 180 / section.getLength()))
-                % 180;
+            (interval * 180 / (kIndications.maxTick) + (i * 180 / section.getLength())) % 180;
         armLEDsBuffer.setHSV(i, hue, 255, 128);
       } else {
         armLEDsBuffer.setLED(i, Color.kBlack);
