@@ -30,20 +30,34 @@ public final class Constants {
     }
   }
 
+  public static final class kGripper {
+    public static final boolean inverted = true;
+    public static final int proximityThreshold = 100;
+    // TODO Tune these constants:
+    public static final int intakeVel = 3;
+    public static final int ejectVel = -3;
+    public static final int holdingVolage = 5;
+    public static final int stallCurrentLimit = 5;
+    public static final int freeCurrentLimit = 7;
+  }
+
+  public static final class kArm {
+    public static final class Dimension {
+      public static final double Lp = 0.0;
+      public static final double Lf = 0.0;
+    }
+
+    public static final class Constraints {
+      public static final double Velocity = 5;
+      public static final double Acceleration = 1;
+    }
+  }
+
   public static final class CanId {
-    public static final int climberLiftLead = 1;
-    public static final int climberLiftFollow = 2;
-    public static final int climberRotate = 3;
-    public static final int intakeLower = 5;
-    public static final int upperConveyor = 4;
-    public static final int shooterLead = 6;
-    public static final int shooterFollow = 7;
-    public static final int leftDriveLead = 13;
-    public static final int leftDriveFollow = 12;
-    public static final int rightDriveLead = 11;
-    public static final int rightDriveFollow = 10;
-    public static final int compressor = 8;
-    public static final int solenoidPort = 0;
+    public static final int leftDriveLead = 2;
+    public static final int leftDriveFollow = 3;
+    public static final int rightDriveLead = 4;
+    public static final int rightDriveFollow = 5;
     public static final int shoulderNeo1 = 20;
     public static final int shoulderNeo2 = 21;
     public static final int elbowNeo = 22;
@@ -52,19 +66,19 @@ public final class Constants {
     public static final int gripperNeo2 = 25;
   }
 
-  public static final class Drivetrain {
+  public static final class kDrivetrain {
     public static final class Feedforward {
       // Feedforwards from sysid
-      public final class Left {
-        public static final double kS = 0.56131;
-        public static final double kV = 2.065;
-        public static final double kA = 0.37539;
+      public final class Linear {
+        public static final double kS = 0.093288;
+        public static final double kV = 1.1829;
+        public static final double kA = 0.30047;
       }
 
-      public final class Right {
-        public static final double kS = 0.55809;
-        public static final double kV = 2.0644;
-        public static final double kA = 0.19512;
+      public final class Angular {
+        public static final double kS = 0.10491;
+        public static final double kV = 0.094751;
+        public static final double kA = 0.0065468;
       }
     }
 
@@ -78,16 +92,18 @@ public final class Constants {
       public static final double wheelCircumferenceMeters = Units.inchesToMeters(6 * Math.PI);
       // TODO Measure Trackwidth
       public static final double trackWidthMeters = Units.inchesToMeters(30);
-      public static final boolean kInvertDrive = true;
+      public static final boolean kInvertDrive = false;
     }
 
     public static final class Rate {
       // Speeds in m/s rotations in rad/s
+      // TODO Get maxes from Sysid
       public static final double maxSpeed = 5.45;
+      public static final double maxAccel = 10;
+      public static final double maxAngularAccel = 5;
       public static final double driverSpeed = 4;
       public static final double driverAngularSpeed = 3;
       public static final double driverAccel = 5;
-      public static final double driverDeccel = 10;
     }
 
     public final class PIDs {
@@ -105,26 +121,25 @@ public final class Constants {
     }
 
     public final class Encoders {
-      public static final int rightAPort = 2;
-      public static final int rightBPort = 3;
-      public static final int leftBPort = 0;
-      public static final int leftAPort = 1;
+      public static final int rightAPort = 0;
+      public static final int rightBPort = 1;
+      public static final int leftAPort = 2;
+      public static final int leftBPort = 3;
 
-      public static final int PPR = 248;
+      public static final double PPR = 1024;
+      public static final double gearing = 34.0 / 18.0;
     }
   }
 
-  public static final class Vision {
+  public static final class kVision {
     // Cam mounted facing forward, half a meter behind center, half a meter up from center.
     public static final Transform3d aprilTagCameraPositionTransform =
         new Transform3d(new Translation3d(-0.5, 0.0, 0.5), new Rotation3d(0, 0, 0));
   }
 
-  public static final class kSensors {
+  public static final class kIndications {
     public static final int ledPort = 0;
     public static final int ledLength = 300;
-    // For Color Sensor
-    public static final int proximityThreshold = 100;
   }
 
   public enum GamePiece {

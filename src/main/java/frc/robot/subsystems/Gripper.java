@@ -3,15 +3,16 @@ package frc.robot.subsystems;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CanId;
 import frc.robot.Constants.GamePiece;
-import frc.robot.Constants.GripperConstants;
-import frc.robot.Constants.kSensors;
+import frc.robot.Constants.kGripper;
 import frc.robot.utilities.PicoColorSensor;
 import frc.robot.utilities.PicoColorSensor.RawColor;
 
 public class Gripper extends SubsystemBase {
+  GamePiece gameState;
   // Initialize Motorcontroller objects
   private final CANSparkMax gripperNeo1 = new CANSparkMax(CanId.gripperNeo1, MotorType.kBrushless);
   private final CANSparkMax gripperNeo2 = new CANSparkMax(CanId.gripperNeo2, MotorType.kBrushless);
@@ -23,11 +24,14 @@ public class Gripper extends SubsystemBase {
 
   public Gripper() {
     // Sets the motor controllers to inverted if needed
-    gripperNeo1.setInverted(!GripperConstants.inverted);
-    gripperNeo2.setInverted(GripperConstants.inverted);
+    gripperNeo1.setInverted(!kGripper.inverted);
+    gripperNeo2.setInverted(kGripper.inverted);
+    gripperNeo1.setSmartCurrentLimit(kGripper.stallCurrentLimit, kGripper.freeCurrentLimit);
 
     colorSensor = new PicoColorSensor();
     colorSensor.setDebugPrints(false);
+
+    this.setDefaultCommand(holdCommand());
   }
 
   // Sets the voltage of motors
@@ -51,12 +55,37 @@ public class Gripper extends SubsystemBase {
     int proximity = colorSensor.getProximity0();
     RawColor color = colorSensor.getRawColor0();
 
-    if (proximity > kSensors.proximityThreshold) {
+    if (proximity > kGripper.proximityThreshold) {
       double colorRatio = (double) color.blue / (double) color.green;
       if (4 < colorRatio && colorRatio < 8) return GamePiece.CONE;
       else if (0 < colorRatio && colorRatio < 2) return GamePiece.KUBE;
     }
     return GamePiece.NONE;
+  }
+
+  public Command intakeCommand() {
+
+    return this.startEnd(
+            () -> setVoltage(kGripper.intakeVel),
+            () -> {
+              setVoltage(0);
+              gameState = getGamePiece();
+            })
+        .until(() -> getGamePiece() != GamePiece.NONE);
+  }
+
+  public Command ejectCommand() {
+    return this.startEnd(
+            () -> setVoltage(kGripper.ejectVel),
+            () -> {
+              setVoltage(0);
+              gameState = getGamePiece();
+            })
+        .until(() -> getGamePiece() == GamePiece.NONE);
+  }
+
+  public Command holdCommand() {
+    return this.startEnd(() -> setVoltage(kGripper.holdingVolage), () -> setVoltage(0));
   }
 
   @Override

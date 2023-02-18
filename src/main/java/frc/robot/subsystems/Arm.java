@@ -4,9 +4,18 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import edu.wpi.first.math.MatBuilder;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ArmConstants.Dimensions;
 import frc.robot.Constants.CanId;
+import frc.robot.Constants.kArm.Constraints;
+import frc.robot.Constants.kArm.Dimension;
 
 public class Arm extends SubsystemBase {
   // Object initialization motor controllers
@@ -47,13 +56,13 @@ public class Arm extends SubsystemBase {
     // This method will be called once per scheduler run during simulation
   }
 
-  public void kinematics(double theta_s, double theta_e) {
+  public void kinemat(double theta_s, double theta_e) {
 
     double xG = Dimensions.Lp * Math.cos(theta_s) + Dimensions.Lf * Math.cos(theta_e);
     double yG = Dimensions.Lp * Math.sin(theta_s) + Dimensions.Lf * Math.sin(theta_e);
   }
 
-  public void inverseKinematics(double xG, double yG) {
+  public void inverseKinemat(double xG, double yG) {
     double r = Math.sqrt(xG * xG + yG * yG);
     double alpha = Math.atan(yG / xG);
     double theta_s =
@@ -64,7 +73,51 @@ public class Arm extends SubsystemBase {
     double theta_e =
         alpha
             - Math.acos(
-                (r * r + Dimensions.Lf * Dimensions.Lf - Dimensions.Lp * Dimensions.Lp)
-                    / (2 * r * Dimensions.Lf));
+                (r * r + Dimension.Lf * Dimension.Lf - Dimension.Lp * Dimension.Lp)
+                    / (2 * r * Dimension.Lf));
+  }
+
+  public Matrix<N2, N1> kinematics(Matrix<N2, N1> matrixSE) {
+    double xG =
+        Dimension.Lp * Math.cos(matrixSE.get(0, 0)) + Dimension.Lf * Math.cos(matrixSE.get(1, 0));
+    double yG =
+        Dimension.Lp * Math.sin(matrixSE.get(0, 0)) + Dimension.Lf * Math.sin(matrixSE.get(1, 0));
+    return new MatBuilder<>(Nat.N2(), Nat.N1()).fill(xG, yG);
+  }
+
+  public Matrix<N2, N1> inverseKinematics(Matrix<N2, N1> matrixXY) {
+    double r = Math.sqrt(Math.pow(matrixXY.get(0, 0), 2) + Math.pow(matrixXY.get(1, 0), 2));
+    double theta_s =
+        Math.atan(matrixXY.get(1, 0) / matrixXY.get(0, 0))
+            + Math.acos(
+                (Math.pow(r, 2) + Math.pow(Dimension.Lp, 2) - Math.pow(Dimension.Lf, 2))
+                    / (2 * r * Dimension.Lp));
+    double theta_e =
+        Math.atan(matrixXY.get(1, 0) / matrixXY.get(0, 0))
+            - Math.acos(
+                (Math.pow(r, 2) + Math.pow(Dimension.Lf, 2) - Math.pow(Dimension.Lp, 2))
+                    / (2 * r * Dimension.Lf));
+    return new MatBuilder<>(Nat.N2(), Nat.N1()).fill(theta_s, theta_e);
+  }
+
+  public Pair<TrapezoidProfile, TrapezoidProfile> motionProfile(
+      Matrix<N2, N1> startXY, Matrix<N2, N1> endXY) {
+    // Inverse Kinematics to get the Thetas
+    Matrix<N2, N1> initialThetas = inverseKinematics(startXY); // Shoulder, then Elbow
+    Matrix<N2, N1> endThetas = inverseKinematics(endXY);
+    // Create the Motion Profiles
+    TrapezoidProfile profileShoulder =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(
+                Constraints.Velocity, Constraints.Acceleration), // contraints
+            new TrapezoidProfile.State(endThetas.get(0, 0), 0), // endpoint
+            new TrapezoidProfile.State(initialThetas.get(0, 0), 0)); // startpoint
+    TrapezoidProfile profileElbow =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(
+                Constraints.Velocity, Constraints.Acceleration), // contraints
+            new TrapezoidProfile.State(endThetas.get(1, 0), 0), // endpoint
+            new TrapezoidProfile.State(initialThetas.get(1, 0), 0)); // startpoint
+    return new Pair<>(profileShoulder, profileElbow); // Return as pair
   }
 }

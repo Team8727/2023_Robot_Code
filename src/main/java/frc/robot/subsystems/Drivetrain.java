@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.math.system.plant.LinearSystemId.identifyDrivetrainSystem;
+
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
@@ -13,8 +15,10 @@ import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.controller.DifferentialDriveAccelerationLimiter;
+import edu.wpi.first.math.controller.DifferentialDriveFeedforward;
+import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -24,13 +28,15 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.system.LinearSystem;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.SerialPort.Port;
+import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
@@ -41,8 +47,8 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CanId;
-import frc.robot.Constants.Drivetrain.*;
-import frc.robot.Constants.Vision;
+import frc.robot.Constants.kDrivetrain.*;
+import frc.robot.Constants.kVision;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,19 +65,37 @@ public class Drivetrain extends SubsystemBase {
   private final CANSparkMax rightLead = new CANSparkMax(CanId.rightDriveLead, MotorType.kBrushless);
   private final CANSparkMax rightFollow =
       new CANSparkMax(CanId.rightDriveFollow, MotorType.kBrushless);
+
   // Create motor controller groups
-  private final MotorControllerGroup leftMotorControllerGroup =
+  private final MotorControllerGroup leftMotorGroup =
       new MotorControllerGroup(leftLead, leftFollow);
-  private final MotorControllerGroup rightMotorControllerGroup =
+  private final MotorControllerGroup rightMotorGroup =
       new MotorControllerGroup(rightLead, rightFollow);
 
   // Create Drivetrain controllers and kinematics objects
-  private SimpleMotorFeedforward leftFeedforward =
-      new SimpleMotorFeedforward(Feedforward.Left.kS, Feedforward.Left.kV, Feedforward.Left.kA);
-  private SimpleMotorFeedforward rightFeedforward =
-      new SimpleMotorFeedforward(Feedforward.Right.kS, Feedforward.Right.kV, Feedforward.Right.kA);
+  private LinearSystem<N2, N2, N2> drivetrainModel =
+      identifyDrivetrainSystem(
+          Feedforward.Linear.kV,
+          Feedforward.Linear.kA,
+          Feedforward.Angular.kV,
+          Feedforward.Angular.kA,
+          Dimensions.trackWidthMeters);
+  private DifferentialDriveFeedforward DDFeedforward =
+      new DifferentialDriveFeedforward(
+          Feedforward.Linear.kV,
+          Feedforward.Linear.kA,
+          Feedforward.Angular.kV,
+          Feedforward.Angular.kA,
+          Dimensions.trackWidthMeters);
+  private DifferentialDriveWheelSpeeds lastSpeeds = new DifferentialDriveWheelSpeeds();
+
   private DifferentialDriveKinematics driveKinematics =
       new DifferentialDriveKinematics(Dimensions.trackWidthMeters);
+
+  private DifferentialDriveAccelerationLimiter accelLimiter =
+      new DifferentialDriveAccelerationLimiter(
+          drivetrainModel, Dimensions.trackWidthMeters, Rate.maxAccel, Rate.maxAngularAccel);
+
   private DifferentialDrivePoseEstimator DDPoseEstimator;
   private PIDController leftPIDs = new PIDController(PIDs.Left.kS, PIDs.Left.kV, PIDs.Left.kA);
   private PIDController rightPIDs = new PIDController(PIDs.Right.kS, PIDs.Right.kV, PIDs.Right.kA);
@@ -97,10 +121,13 @@ public class Drivetrain extends SubsystemBase {
   public Drivetrain() {
     // Set one drivetrain pair to run reverse so both drive forward on the positive direction (Which
     // group selected by Constants.Drive.kInvertDrive; left = False)
-    leftMotorControllerGroup.setInverted(!Dimensions.kInvertDrive);
-    rightMotorControllerGroup.setInverted(Dimensions.kInvertDrive);
-    leftEncoder.setDistancePerPulse(Dimensions.wheelCircumferenceMeters / Encoders.PPR);
-    rightEncoder.setDistancePerPulse(Dimensions.wheelCircumferenceMeters / Encoders.PPR);
+    leftMotorGroup.setInverted(!Dimensions.kInvertDrive);
+    rightMotorGroup.setInverted(Dimensions.kInvertDrive);
+    leftEncoder.setDistancePerPulse(
+        Dimensions.wheelCircumferenceMeters / (Encoders.gearing * Encoders.PPR));
+    rightEncoder.setDistancePerPulse(
+        Dimensions.wheelCircumferenceMeters / (Encoders.gearing * Encoders.PPR));
+    rightEncoder.setReverseDirection(true);
 
     // TODO clean up this garbage
     try {
@@ -112,7 +139,7 @@ public class Drivetrain extends SubsystemBase {
     }
     camList.add(
         new Pair<PhotonCamera, Transform3d>(
-            aprilTagCamera, Vision.aprilTagCameraPositionTransform));
+            aprilTagCamera, kVision.aprilTagCameraPositionTransform));
     AprilTagPoseEstimator =
         new RobotPoseEstimator(aprilTagFieldLayout, PoseStrategy.LOWEST_AMBIGUITY, camList);
 
@@ -167,22 +194,50 @@ public class Drivetrain extends SubsystemBase {
             Rate.maxSpeed * leftPercent, Rate.maxSpeed * rightPercent));
   }
 
-  // Set the appropriate motor voltages for a desired set of wheel speeds + PIDs now
+  // Set the appropriate motor voltages for a desired set of wheel speeds (acceleration limited)
   public void driveWheelSpeeds(DifferentialDriveWheelSpeeds wheelSpeeds) {
-    leftMotorControllerGroup.setVoltage(leftFeedforward.calculate(wheelSpeeds.leftMetersPerSecond));
-    rightMotorControllerGroup.setVoltage(
-        rightFeedforward.calculate(wheelSpeeds.rightMetersPerSecond));
+    // Feedforward calculated with current velocity and next velcocity with timestep of 20ms
+    // (default robot loop period)
+    driveLimitedVoltages(
+        DDFeedforward.calculate(
+            lastSpeeds.leftMetersPerSecond,
+            wheelSpeeds.leftMetersPerSecond,
+            lastSpeeds.rightMetersPerSecond,
+            wheelSpeeds.rightMetersPerSecond,
+            20.0 / 1000.0));
+    lastSpeeds = wheelSpeeds;
   }
 
   // Set the appropriate motor voltages for a desired set of linear and angular chassis speeds
+  // (acceleration limited)
   public void driveChassisSpeeds(ChassisSpeeds chassisSpeeds) {
     driveWheelSpeeds(driveKinematics.toWheelSpeeds(chassisSpeeds));
   }
 
-  // Drive the motors at a given voltage
+  // Drive the motors at a given voltage (doubles)
   public void driveVoltages(double leftVoltage, double rightVoltage) {
-    leftMotorControllerGroup.setVoltage(leftVoltage);
-    rightMotorControllerGroup.setVoltage(rightVoltage);
+    leftMotorGroup.setVoltage(leftVoltage);
+    rightMotorGroup.setVoltage(rightVoltage);
+  }
+
+  // Drive the motors at a given voltage (DifferentialDriveWheelVoltages)
+  public void driveVoltages(DifferentialDriveWheelVoltages voltages) {
+    voltages =
+        accelLimiter.calculate(
+            getLeftVelocity(), getRightVelocity(), voltages.left, voltages.right);
+
+    leftMotorGroup.setVoltage(voltages.left);
+    rightMotorGroup.setVoltage(voltages.right);
+  }
+
+  // Same as driveVoltages but acceleration is limited according to the drivetrain model
+  public void driveLimitedVoltages(DifferentialDriveWheelVoltages voltages) {
+    voltages =
+        accelLimiter.calculate(
+            getLeftVelocity(), getRightVelocity(), voltages.left, voltages.right);
+
+    leftMotorGroup.setVoltage(voltages.left);
+    rightMotorGroup.setVoltage(voltages.right);
   }
 
   // PID Control
@@ -190,12 +245,21 @@ public class Drivetrain extends SubsystemBase {
       DifferentialDriveWheelSpeeds wheelSpeeds,
       double leftVelocitySetpoint,
       double rightVelocitySetpoint) {
-    leftMotorControllerGroup.setVoltage(
-        leftPIDs.calculate(leftEncoder.getRate(), leftVelocitySetpoint)
-            + leftFeedforward.calculate(leftVelocitySetpoint));
-    rightMotorControllerGroup.setVoltage(
+    // Feedforward calculated with current velocity and next velcocity with timestep of 20ms
+    // (default robot loop period)
+    var feedforwardVoltages =
+        DDFeedforward.calculate(
+            getLeftVelocity(),
+            wheelSpeeds.leftMetersPerSecond,
+            getRightVelocity(),
+            wheelSpeeds.rightMetersPerSecond,
+            20 / 1000);
+
+    // Command wheel voltages
+    driveVoltages(
+        leftPIDs.calculate(leftEncoder.getRate(), leftVelocitySetpoint) + feedforwardVoltages.left,
         rightPIDs.calculate(rightEncoder.getRate(), rightVelocitySetpoint)
-            + rightFeedforward.calculate(rightVelocitySetpoint));
+            + feedforwardVoltages.right);
   }
   // Utility function to map joystick input nonlinearly for driver "feel"
   public static double NonLinear(double input) {
@@ -221,6 +285,10 @@ public class Drivetrain extends SubsystemBase {
 
   public double getAngle() {
     return Units.degreesToRadians(-gyro.getYaw());
+  }
+
+  public Pose2d getPose() {
+    return DDPoseEstimator.getEstimatedPosition();
   }
 
   public Trajectory generateTrajectory(Pose2d endPose, ArrayList<Translation2d> waypoints) {
