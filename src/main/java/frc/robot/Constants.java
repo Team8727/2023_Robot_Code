@@ -128,7 +128,7 @@ public final class Constants {
   public static final class kIndications {
     public static final int ledPort = 0;
     public static final int ledLength = 300;
-    public static final int maxCount = 200;
+    public static final int maxTick = 200;
   }
 
   public enum GamePiece {
