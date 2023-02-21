@@ -26,7 +26,7 @@ public class Indications extends SubsystemBase {
 
   public void monotone(LEDSubStrip section, Color color) {
     for (int i = 0; i <= section.getLength(); i++) {
-      armLEDsBuffer.setLED(i, color);
+      section.setLED(i, color);
     }
   }
 
@@ -38,11 +38,11 @@ public class Indications extends SubsystemBase {
     for (int i = 0; i <= section.getLength(); i++) {
       // color 1
       if (((i + interval) % patternSize) < 1) {
-        armLEDsBuffer.setLED(i, color1);
+        section.setLED(i, color1);
 
       } else {
         // color 2
-        armLEDsBuffer.setLED(i, color2);
+        section.setLED(i, color2);
       }
     }
   }
@@ -51,10 +51,10 @@ public class Indications extends SubsystemBase {
     for (int i = 0; i <= section.getLength(); i++) {
       // turns the LEDs onn if the interval is one
       if ((interval % 2) == 1) {
-        armLEDsBuffer.setLED(i, color);
+        section.setLED(i, color);
       } else {
         // sets the LEDs off
-        armLEDsBuffer.setLED(i, Color.kBlack);
+        section.setLED(i, Color.kBlack);
       }
     }
   }
@@ -67,9 +67,9 @@ public class Indications extends SubsystemBase {
       // finds where is the sequence the "chasing" LED is
       if (i % sectionSize >= (interval + sectionSize) / kIndications.maxTick
           && (i % sectionSize) + 1 < (interval + sectionSize) / kIndications.maxTick) {
-        armLEDsBuffer.setLED(i, color);
+        section.setLED(i, color);
       } else {
-        armLEDsBuffer.setRGB(i, 0, 0, 0);
+        section.setRGB(i, 0, 0, 0);
       }
     }
   }
@@ -77,12 +77,12 @@ public class Indications extends SubsystemBase {
   private void flashingRainbow(LEDSubStrip section, int interval) {
     // Altered version of the rainbow script from the first documentation
     for (var i = 0; i < section.getLength(); i++) {
-      if ((interval / 30) % 2 == 0) {
+      if ((interval / 30) % 2 < 1) {
         final var hue =
             (interval * 180 / (kIndications.maxTick) + (i * 180 / section.getLength())) % 180;
-        armLEDsBuffer.setHSV(i, hue, 255, 128);
+        section.setHSV(i, hue, 255, 128);
       } else {
-        armLEDsBuffer.setLED(i, Color.kBlack);
+        section.setLED(i, Color.kBlack);
       }
     }
   }
@@ -91,18 +91,23 @@ public class Indications extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
 
-    // changes tick by one and than
-    tick++;
+    // increment tick
+    tick = (tick + 1) % kIndications.maxTick;
 
-    if (tick >= kIndications.maxTick) {
-      tick = 0;
-    }
-
+    // check party mode and than either alternate or flashing rainbow
     if (partyMode == false) {
-      alternate(proximalLeftStrip, tick, Color.kLime, Color.kBlack);
+      // Alternates between black(off) and lime green
+      // Also slowTick exist because other wise it would alternate every single tick
+      // flashingRainbow doesn't need such tick because I hard coded it into the code to get both a
+      // flash and a rainbow
+      int slowTick = tick / (kIndications.maxTick / 2);
+      alternate(proximalLeftStrip, slowTick, Color.kLime, Color.kBlack);
     } else {
+      // uses a flashing rainbow
       flashingRainbow(proximalLeftStrip, tick);
     }
+
+    // set LED
     armLEDs.setData(armLEDsBuffer);
   }
 
