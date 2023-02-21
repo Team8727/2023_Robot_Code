@@ -66,7 +66,12 @@ public class Arm extends SubsystemBase {
         new DoubleJointedArmController(
             Feedback.proximal_kP, Feedback.proximal_kD, Feedback.forearm_kP, Feedback.forearm_kD);
   }
-
+  public boolean inbound(int x, int y, int z, int radius){
+    if(Math.sqrt((x*x)+(y*y)+(z*z))=<radius){return true;
+    } 
+    else {return false;
+    }
+  }
   public Matrix<N2, N1> kinematics(Matrix<N2, N1> matrixSE) {
     double xG =
         Proximal.length * Math.cos(matrixSE.get(0, 0))
