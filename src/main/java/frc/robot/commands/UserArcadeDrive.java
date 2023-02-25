@@ -3,9 +3,12 @@ package frc.robot.commands;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.networktables.StringTopic;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.kDrivetrain.Rate;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Indications.RobotStates;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
@@ -16,6 +19,7 @@ import java.util.function.DoubleSupplier;
  */
 public class UserArcadeDrive extends CommandBase {
   private final Drivetrain drivetrain;
+  private final StringPublisher indications;
   private final SlewRateLimiter slewRateLimiter;
   private final DoubleSupplier linearInput;
   private final DoubleSupplier angularInput;
@@ -25,17 +29,21 @@ public class UserArcadeDrive extends CommandBase {
    * Linear supplier and angular supplier are -1 to 1 double inputs that can be passed as method
    * references or lambda in the ctors Same but boolean for boost Drivetrain subsystem instance is
    * passed in
+   *
+   * @param indications
    */
   public UserArcadeDrive(
       DoubleSupplier linearSupplier,
       DoubleSupplier angularSupplier,
       BooleanSupplier boostSupplier,
-      Drivetrain drivetrain) {
+      Drivetrain drivetrain,
+      StringTopic indicationsTopic) {
     this.drivetrain = drivetrain;
     slewRateLimiter = new SlewRateLimiter(Rate.driverAccel);
     linearInput = linearSupplier;
     angularInput = angularSupplier;
     boostInput = boostSupplier;
+    indications = indicationsTopic.publish();
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(drivetrain);
@@ -70,11 +78,15 @@ public class UserArcadeDrive extends CommandBase {
     // Apply the calculated speeds to the drivetrain
     drivetrain.driveChassisSpeeds(
         new ChassisSpeeds(slewRateLimiter.calculate(linearSpeed), 0, angularSpeed));
+
+    // Indicate drive state with the LEDs
+    indications.set(RobotStates.DRIVE_FORWARD.name());
   }
 
   // Unpower the motors when the command ends or is interuppted
   @Override
   public void end(boolean interrupted) {
     drivetrain.driveChassisSpeeds(new ChassisSpeeds(0, 0, 0));
+    indications.set(RobotStates.OFF.name());
   }
 }
