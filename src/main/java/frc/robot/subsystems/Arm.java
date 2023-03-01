@@ -85,6 +85,41 @@ public class Arm extends SubsystemBase {
         new DoubleJointedArmController(
             Feedback.proximal_kP, Feedback.proximal_kD, Feedback.forearm_kP, Feedback.forearm_kD);
   }
+  // this is bad
+
+  // use this
+  public boolean illegal_arm_pos(
+      int[] box_x,
+      int[] box_y,
+      int box_height,
+      int arm_length,
+      int arm_xytheta,
+      int arm_ztheta,
+      int robot_center,
+      int arm_width,
+      int arm_depth,
+      int length_behind_pivot,
+      int pivot_height,
+      int epsilon,
+      int robot_width,
+      int robot_length) {
+    if (((box_x[0] - epsilon - (1 / 2) * Sin(arm_xytheta) * arm_width
+                <= robot_center[0]
+                    + max(Sin(arm_xytheta) * (arm_length / length_behind_pivot), robot_length / 2)
+                <= box_x[1] + epsilon + (1 / 2) * Sin(arm_xytheta) * arm_width)
+            & (box_y[0] - epsilon - (1 / 2) * Cos(arm_xytheta) * arm_width
+                <= robot_center[1]
+                    + max(Cos(arm_xytheta) * (arm_length / length_behind_pivot), robot_width / 2)
+                <= epsilon + box_y[1] + (1 / 2) * Cos(arm_xytheta) * arm_width)
+            & (Cos(arm_ztheta) * (arm_length / length_behind_pivot)
+                < box_height + epsilon + (1 / 2) * Sin(arm_ztheta)))
+        | (Cos(arm_ztheta) * (arm_length / length_behind_pivot)
+            <= epsilon + (1 / 2) * Sin(arm_ztheta) * arm_depth)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   public Matrix<N2, N1> kinematics2D(Matrix<N2, N1> matrixSE) {
     double xG =
