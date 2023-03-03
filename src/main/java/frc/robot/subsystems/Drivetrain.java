@@ -7,6 +7,10 @@ package frc.robot.subsystems;
 import static edu.wpi.first.math.system.plant.LinearSystemId.identifyDrivetrainSystem;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathConstraints;
+import com.pathplanner.lib.PathPlanner;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.commands.FollowPathWithEvents;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -49,10 +53,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.CanId;
 import frc.robot.Constants.kDrivetrain.*;
 import frc.robot.Constants.kVision;
+import frc.robot.commands.PPLTVControllerCommand;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.photonvision.PhotonCamera;
 import org.photonvision.RobotPoseEstimator;
 import org.photonvision.RobotPoseEstimator.PoseStrategy;
@@ -87,16 +94,19 @@ public class Drivetrain extends SubsystemBase {
           Feedforward.Angular.kV,
           Feedforward.Angular.kA,
           Dimensions.trackWidthMeters);
-  private LTVDifferentialDriveController ltvController =
+  public LTVDifferentialDriveController ltvController =
       new LTVDifferentialDriveController(
           drivetrainModel,
           Dimensions.trackWidthMeters,
           PathFollowing.qelems,
           PathFollowing.relems,
           20.0 / 1000.0);
+  public PathPlannerTrajectory examplePath =
+      PathPlanner.loadPath("SimplePickandBalence.path", new PathConstraints(4, 3));
+
   private DifferentialDriveWheelSpeeds lastSpeeds = new DifferentialDriveWheelSpeeds();
 
-  private DifferentialDriveKinematics driveKinematics =
+  public DifferentialDriveKinematics driveKinematics =
       new DifferentialDriveKinematics(Dimensions.trackWidthMeters);
 
   private DifferentialDriveAccelerationLimiter accelLimiter =
@@ -121,6 +131,11 @@ public class Drivetrain extends SubsystemBase {
   private ShuffleboardTab SBTab = Shuffleboard.getTab("Drivetrain");
   private ShuffleboardLayout SBSensors;
   private Field2d robotField2d = new Field2d();
+  public Consumer<DifferentialDriveWheelVoltages> voltageConsumerDrive = (a) -> driveVoltages(a);
+  public Supplier<Pose2d> supplyPose = () -> getPose();
+  private PPLTVControllerCommand pathfollowCommand =
+      new PPLTVControllerCommand(
+          examplePath, supplyPose, ltvController, driveKinematics, voltageConsumerDrive, this);
 
   // Constructor taking no arguments, all relevant values are defined in Constants.java
   public Drivetrain() {
@@ -270,7 +285,11 @@ public class Drivetrain extends SubsystemBase {
   public Pose2d getPose() {
     return DDPoseEstimator.getEstimatedPosition();
   }
-
+  /*
+    public Supplier<Pose2d> getPoseSupplier(){
+      Supplier<Pose2d> supply = DDPoseEstimator.getEstimatedPosition();;
+    }
+  */
   public Trajectory generateTrajectory(Pose2d endPose, ArrayList<Translation2d> waypoints) {
 
     // Starting Position
@@ -292,6 +311,9 @@ public class Drivetrain extends SubsystemBase {
             StartPosition, interiorWaypoints, EndPosition, config);
     return trajectory;
   }
+
+  public FollowPathWithEvents followPathWithEventsCommand =
+      new FollowPathWithEvents(pathfollowCommand, examplePath.getMarkers(), null);
 
   private void shuffleBoardInit() {
     SBSensors = SBTab.getLayout("Sensors", BuiltInLayouts.kList).withSize(2, 4).withPosition(0, 0);

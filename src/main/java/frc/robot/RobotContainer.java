@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorInterface;
+import frc.robot.commands.PPLTVControllerCommand;
 import frc.robot.commands.UserArcadeDrive;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Drivetrain;
@@ -27,6 +28,15 @@ public class RobotContainer {
       new CommandXboxController(OperatorInterface.primaryController);
 
   private final Drivetrain drivetrain = new Drivetrain();
+
+  private PPLTVControllerCommand pathfollowCommand =
+      new PPLTVControllerCommand(
+          drivetrain.examplePath,
+          drivetrain.supplyPose,
+          drivetrain.ltvController,
+          drivetrain.driveKinematics,
+          drivetrain.voltageConsumerDrive,
+          drivetrain);
 
   @SuppressWarnings("unused")
   private final Arm arm = new Arm();
@@ -63,6 +73,6 @@ public class RobotContainer {
    */
   public Command getAutoCommand() {
     if (Robot.isReal()) return null;
-    return arm.simpleTrajectory(.1, .1, 1.2, 1.2);
+    return drivetrain.followPathWithEventsCommand;
   }
 }
