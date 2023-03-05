@@ -12,7 +12,6 @@ import frc.robot.commands.UserArcadeDrive;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Gripper;
-import frc.robot.subsystems.Indications;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -28,7 +27,6 @@ public class RobotContainer {
       new CommandXboxController(OperatorInterface.primaryController);
 
   private final Drivetrain drivetrain = new Drivetrain();
-  private final Indications indications = new Indications();
 
   @SuppressWarnings("unused")
   private final Arm arm = new Arm();

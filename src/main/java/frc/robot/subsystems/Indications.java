@@ -86,14 +86,15 @@ public class Indications extends SubsystemBase {
     this.currentStateEntry = Indications.getCurrentStateTopic().getEntry(currentState.name());
 
     // Listen for changes to the state
-    NetworkTableInstance.getDefault().addListener(
-        currentStateEntry,
-        EnumSet.of(NetworkTableEvent.Kind.kPublish),
-        event -> {
-          if (event.valueData != null) {
-            tryIndicating(event.valueData.value.getString());
-          }
-        });
+    NetworkTableInstance.getDefault()
+        .addListener(
+            currentStateEntry,
+            EnumSet.of(NetworkTableEvent.Kind.kPublish),
+            event -> {
+              if (event.valueData != null) {
+                tryIndicating(event.valueData.value.getString());
+              }
+            });
   }
 
   /**
@@ -114,7 +115,8 @@ public class Indications extends SubsystemBase {
 
       // We will store the current state at CURRENT_STATE_TOPIC (/states/current) allowing for other
       // entries in e.g. /states/history
-      Indications.currentStateTopic = indicationsTable.getStringTopic(Indications.CURRENT_STATE_TOPIC);
+      Indications.currentStateTopic =
+          indicationsTable.getStringTopic(Indications.CURRENT_STATE_TOPIC);
     }
     return Indications.currentStateTopic;
   }
