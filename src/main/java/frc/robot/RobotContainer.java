@@ -42,8 +42,7 @@ public class RobotContainer {
             () -> -driverController.getLeftY(),
             () -> -driverController.getRightX(),
             () -> driverController.getRightTriggerAxis() > .1,
-            drivetrain,
-            indications.getCurrentStateTopic()));
+            drivetrain));
     // Configure the trigger bindings
     configureBindings();
   }

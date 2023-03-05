@@ -22,6 +22,9 @@ public class Indications extends SubsystemBase {
   // The Topic name that subsystems will publish their states to
   public static final String CURRENT_STATE_TOPIC = "/states/current";
 
+  // A StringTopic instance where state is stored
+  private static StringTopic currentStateTopic;
+
   // Enumerate the various robot states that we want to
   // indicate with the LEDs
   public enum RobotStates {
@@ -41,7 +44,6 @@ public class Indications extends SubsystemBase {
   private AddressableLEDBuffer armLEDsBuffer;
   private LEDSubStrip proximalLeftStrip;
   private HashMap<RobotStates, Indicator> stateIndications;
-  private StringTopic currentStateTopic;
   private StringEntry currentStateEntry;
   private RobotStates currentState = RobotStates.OFF;
 
@@ -49,6 +51,7 @@ public class Indications extends SubsystemBase {
     // TODO Add constants for start and end locations and move strip constants out of kSensors
     armLEDs = new AddressableLED(kIndications.ledPort);
     armLEDsBuffer = new AddressableLEDBuffer(kIndications.ledLength);
+    armLEDs.setLength(armLEDsBuffer.getLength());
     proximalLeftStrip = new LEDSubStrip(armLEDsBuffer, 0, 60);
     armLEDs.setData(armLEDsBuffer);
     armLEDs.start();
@@ -79,25 +82,17 @@ public class Indications extends SubsystemBase {
           this.monotone(proximalLeftStrip, Color.kOrange);
         });
 
-    // Get the default network table instance
-    NetworkTableInstance instance = NetworkTableInstance.getDefault();
-
-    // Create a new table for indications
-    NetworkTable indicationsTable = instance.getTable(Indications.INDICATIONS_TABLE);
-
-    // We will store the current state at CURRENT_STATE_TOPIC (/states/current) allowing for other
-    // entries in e.g. /states/history
-    currentStateTopic = indicationsTable.getStringTopic(Indications.CURRENT_STATE_TOPIC);
-
-    // Current state is off
-    currentStateEntry = currentStateTopic.getEntry(RobotStates.OFF.name());
+    // Initial state is OFF
+    this.currentStateEntry = Indications.getCurrentStateTopic().getEntry(currentState.name());
 
     // Listen for changes to the state
-    instance.addListener(
+    NetworkTableInstance.getDefault().addListener(
         currentStateEntry,
         EnumSet.of(NetworkTableEvent.Kind.kPublish),
         event -> {
-          tryIndicating(event.valueData.value.getString());
+          if (event.valueData != null) {
+            tryIndicating(event.valueData.value.getString());
+          }
         });
   }
 
@@ -109,8 +104,19 @@ public class Indications extends SubsystemBase {
    *
    * @return the topic for publishing robot states
    */
-  public StringTopic getCurrentStateTopic() {
-    return this.currentStateTopic;
+  public static StringTopic getCurrentStateTopic() {
+    if (Indications.currentStateTopic == null) {
+      // Get the default network table instance
+      NetworkTableInstance instance = NetworkTableInstance.getDefault();
+
+      // Create a new table for indications
+      NetworkTable indicationsTable = instance.getTable(Indications.INDICATIONS_TABLE);
+
+      // We will store the current state at CURRENT_STATE_TOPIC (/states/current) allowing for other
+      // entries in e.g. /states/history
+      Indications.currentStateTopic = indicationsTable.getStringTopic(Indications.CURRENT_STATE_TOPIC);
+    }
+    return Indications.currentStateTopic;
   }
 
   /**
@@ -190,7 +196,7 @@ public class Indications extends SubsystemBase {
    *
    * @param possibleState
    */
-  private synchronized void tryIndicating(String possibleState) {
+  private void tryIndicating(String possibleState) {
     RobotStates state;
     try {
       // If a component has published an unknown state to the network tables,
@@ -203,7 +209,7 @@ public class Indications extends SubsystemBase {
     // If the current state has changed, indicate that
     if (this.currentState != state) {
       currentState = state;
-      indicate(currentState);
+      indicate(state);
     }
   }
 }

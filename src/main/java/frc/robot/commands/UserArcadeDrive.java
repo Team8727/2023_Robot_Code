@@ -8,6 +8,7 @@ import edu.wpi.first.networktables.StringTopic;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.kDrivetrain.Rate;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Indications;
 import frc.robot.subsystems.Indications.RobotStates;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -19,7 +20,7 @@ import java.util.function.DoubleSupplier;
  */
 public class UserArcadeDrive extends CommandBase {
   private final Drivetrain drivetrain;
-  private final StringPublisher indications;
+  private final StringPublisher states;
   private final SlewRateLimiter slewRateLimiter;
   private final DoubleSupplier linearInput;
   private final DoubleSupplier angularInput;
@@ -30,20 +31,19 @@ public class UserArcadeDrive extends CommandBase {
    * references or lambda in the ctors Same but boolean for boost Drivetrain subsystem instance is
    * passed in
    *
-   * @param indications
+   * @param states
    */
   public UserArcadeDrive(
       DoubleSupplier linearSupplier,
       DoubleSupplier angularSupplier,
       BooleanSupplier boostSupplier,
-      Drivetrain drivetrain,
-      StringTopic indicationsTopic) {
+      Drivetrain drivetrain) {
     this.drivetrain = drivetrain;
     slewRateLimiter = new SlewRateLimiter(Rate.driverAccel);
     linearInput = linearSupplier;
     angularInput = angularSupplier;
     boostInput = boostSupplier;
-    indications = indicationsTopic.publish();
+    states = Indications.getCurrentStateTopic().publish();
 
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(drivetrain);
@@ -80,13 +80,13 @@ public class UserArcadeDrive extends CommandBase {
         new ChassisSpeeds(slewRateLimiter.calculate(linearSpeed), 0, angularSpeed));
 
     // Indicate drive state with the LEDs
-    indications.set(RobotStates.DRIVE_FORWARD.name());
+    states.set(RobotStates.DRIVE_FORWARD.name());
   }
 
   // Unpower the motors when the command ends or is interuppted
   @Override
   public void end(boolean interrupted) {
     drivetrain.driveChassisSpeeds(new ChassisSpeeds(0, 0, 0));
-    indications.set(RobotStates.OFF.name());
+    states.set(RobotStates.OFF.name());
   }
 }
