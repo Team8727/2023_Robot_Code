@@ -1,18 +1,25 @@
 package frc.robot.commands;
 
 import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
 import com.pathplanner.lib.server.PathPlannerServer;
+import edu.wpi.first.math.controller.DifferentialDriveFeedforward;
 import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
 import edu.wpi.first.math.controller.LTVDifferentialDriveController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.trajectory.Trajectory.State;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -21,7 +28,10 @@ public class PPLTVControllerCommand extends CommandBase {
   private final Timer timer = new Timer();
   private final PathPlannerTrajectory trajectory;
   private final Supplier<Pose2d> poseSupplier;
+  private final Consumer<Pose2d> poseReset;
   private final LTVDifferentialDriveController controller;
+  private final DifferentialDriveFeedforward feedforward;
+  private final DifferentialDriveKinematics kinematics;
   private final Supplier<DifferentialDriveWheelSpeeds> speedsSupplier;
   private final Consumer<DifferentialDriveWheelVoltages> output;
   private final boolean useAllianceColor;
@@ -58,14 +68,20 @@ public class PPLTVControllerCommand extends CommandBase {
   public PPLTVControllerCommand(
       PathPlannerTrajectory trajectory,
       Supplier<Pose2d> poseSupplier,
+      Consumer<Pose2d> poseReset,
       LTVDifferentialDriveController controller,
+      DifferentialDriveFeedforward feedforward,
+      DifferentialDriveKinematics kinematics,
       Supplier<DifferentialDriveWheelSpeeds> speedsSupplier,
       Consumer<DifferentialDriveWheelVoltages> outputVolts,
       boolean useAllianceColor,
       Subsystem... requirements) {
     this.trajectory = trajectory;
     this.poseSupplier = poseSupplier;
+    this.poseReset = poseReset;
     this.controller = controller;
+    this.feedforward = feedforward;
+    this.kinematics = kinematics;
     this.speedsSupplier = speedsSupplier;
     this.output = outputVolts;
     this.useAllianceColor = useAllianceColor;
@@ -103,19 +119,30 @@ public class PPLTVControllerCommand extends CommandBase {
   public PPLTVControllerCommand(
       PathPlannerTrajectory trajectory,
       Supplier<Pose2d> poseSupplier,
+      Consumer<Pose2d> poseReset,
       LTVDifferentialDriveController controller,
+      DifferentialDriveFeedforward feedforward,
+      DifferentialDriveKinematics kinematics,
       Supplier<DifferentialDriveWheelSpeeds> speedsSupplier,
       Consumer<DifferentialDriveWheelVoltages> outputVolts,
       Subsystem... requirements) {
-    this(trajectory, poseSupplier, controller, speedsSupplier, outputVolts, false, requirements);
+    this(
+        trajectory,
+        poseSupplier,
+        poseReset,
+        controller,
+        feedforward,
+        kinematics,
+        speedsSupplier,
+        outputVolts,
+        false,
+        requirements);
   }
 
   @Override
   public void initialize() {
     if (useAllianceColor && trajectory.fromGUI) {
-      transformedTrajectory =
-          PathPlannerTrajectory.transformTrajectoryForAlliance(
-              trajectory, DriverStation.getAlliance());
+      transformedTrajectory = transformTrajectory(trajectory, DriverStation.getAlliance());
     } else {
       transformedTrajectory = trajectory;
     }
@@ -128,6 +155,7 @@ public class PPLTVControllerCommand extends CommandBase {
     this.timer.start();
 
     PathPlannerServer.sendActivePath(transformedTrajectory.getStates());
+    poseReset.accept(transformedTrajectory.getInitialPose());
   }
 
   @Override
@@ -137,15 +165,42 @@ public class PPLTVControllerCommand extends CommandBase {
 
     PathPlannerTrajectory.PathPlannerState desiredState =
         (PathPlannerTrajectory.PathPlannerState) transformedTrajectory.sample(currentTime);
+    PathPlannerTrajectory.PathPlannerState nextDesiredState =
+        (PathPlannerTrajectory.PathPlannerState)
+            transformedTrajectory.sample(currentTime + 20.0 / 1000);
+
+    var currentWheelSpeeds =
+        kinematics.toWheelSpeeds(
+            new ChassisSpeeds(
+                desiredState.velocityMetersPerSecond, 0, desiredState.angularVelocityRadPerSec));
+    var nextWheelSpeeds =
+        kinematics.toWheelSpeeds(
+            new ChassisSpeeds(
+                nextDesiredState.velocityMetersPerSecond,
+                0,
+                nextDesiredState.angularVelocityRadPerSec));
 
     PathPlannerServer.sendPathFollowingData(desiredState.poseMeters, currentPose);
 
-    DifferentialDriveWheelVoltages targetDifferentialDriveWheelVoltages =
-        this.controller.calculate(
+    DifferentialDriveWheelVoltages feedbackVoltages =
+        controller.calculate(
             currentPose,
-            this.speedsSupplier.get().leftMetersPerSecond,
-            this.speedsSupplier.get().rightMetersPerSecond,
+            speedsSupplier.get().leftMetersPerSecond,
+            speedsSupplier.get().rightMetersPerSecond,
             desiredState);
+
+    DifferentialDriveWheelVoltages feedforwardVoltages =
+        feedforward.calculate(
+            currentWheelSpeeds.leftMetersPerSecond,
+            currentWheelSpeeds.rightMetersPerSecond,
+            nextWheelSpeeds.leftMetersPerSecond,
+            nextWheelSpeeds.rightMetersPerSecond,
+            20.0 / 1000);
+
+    var targetDifferentialDriveWheelVoltages =
+        new DifferentialDriveWheelVoltages(
+            feedforwardVoltages.left + feedbackVoltages.left,
+            feedforwardVoltages.right + feedbackVoltages.right);
 
     this.output.accept(targetDifferentialDriveWheelVoltages);
 
@@ -209,5 +264,54 @@ public class PPLTVControllerCommand extends CommandBase {
     PPLTVControllerCommand.logTargetPose = logTargetPose;
     PPLTVControllerCommand.logSetpoint = logSetpoint;
     PPLTVControllerCommand.logError = logError;
+  }
+
+  public static PathPlannerTrajectory transformTrajectory(
+      PathPlannerTrajectory trajectory, DriverStation.Alliance alliance) {
+    if (alliance == DriverStation.Alliance.Red) {
+      List<State> transformedStates = new ArrayList<>();
+
+      for (State s : trajectory.getStates()) {
+        PathPlannerState state = (PathPlannerState) s;
+
+        transformedStates.add(transformState(state, alliance));
+      }
+
+      return new PathPlannerTrajectory(
+          transformedStates,
+          trajectory.getMarkers(),
+          trajectory.getStartStopEvent(),
+          trajectory.getEndStopEvent(),
+          trajectory.fromGUI);
+    } else {
+      return trajectory;
+    }
+  }
+
+  private static PathPlannerState transformState(
+      PathPlannerState state, DriverStation.Alliance alliance) {
+    if (alliance == DriverStation.Alliance.Red) {
+      // Create a new state so that we don't overwrite the original
+      PathPlannerState transformedState = new PathPlannerState();
+
+      Translation2d transformedTranslation =
+          new Translation2d(16.54 - state.poseMeters.getX(), state.poseMeters.getY());
+      Rotation2d transformedHeading = new Rotation2d(Math.PI).minus(state.poseMeters.getRotation());
+      Rotation2d transformedHolonomicRotation =
+          new Rotation2d(Math.PI).minus(state.holonomicRotation);
+
+      transformedState.timeSeconds = state.timeSeconds;
+      transformedState.velocityMetersPerSecond = state.velocityMetersPerSecond;
+      transformedState.accelerationMetersPerSecondSq = state.accelerationMetersPerSecondSq;
+      transformedState.poseMeters = new Pose2d(transformedTranslation, transformedHeading);
+      transformedState.angularVelocityRadPerSec = -state.angularVelocityRadPerSec;
+      transformedState.holonomicRotation = transformedHolonomicRotation;
+      transformedState.holonomicAngularVelocityRadPerSec = -state.holonomicAngularVelocityRadPerSec;
+      transformedState.curvatureRadPerMeter = -state.curvatureRadPerMeter;
+
+      return transformedState;
+    } else {
+      return state;
+    }
   }
 }
