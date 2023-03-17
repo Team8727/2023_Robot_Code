@@ -22,11 +22,14 @@ public class AutoRoutines {
   private final HashMap<String, Command> routineMap = new HashMap<String, Command>();
   private final SendableChooser<Command> selector = new SendableChooser<Command>();
   private HashMap<String, PathPlannerTrajectory> paths = new HashMap<>();
+  private ArmGripperCommands armGripperCommands;
 
-  public AutoRoutines(Drivetrain drivetrain, Arm arm, Gripper gripper) {
+  public AutoRoutines(
+      Drivetrain drivetrain, Arm arm, Gripper gripper, ArmGripperCommands armGripperCommands) {
     this.drivetrain = drivetrain;
     this.arm = arm;
     this.gripper = gripper;
+    this.armGripperCommands = armGripperCommands;
 
     loadPaths();
     loadRoutines();
@@ -50,8 +53,9 @@ public class AutoRoutines {
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME)));
+    routineMap.put("Balance Only", drivetrain.AutoBalanceCommand());
 
     // sub routines -----------------------------------------------------
     routineMap.put(
@@ -59,7 +63,7 @@ public class AutoRoutines {
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("subConeMobility"))));
     routineMap.put(
@@ -67,27 +71,27 @@ public class AutoRoutines {
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subCubeMobility"))));
-    routineMap.put(
-        "subConeMobilityandBalance",
-        new SequentialCommandGroup(
-            gripper.intakeCommand(),
-            arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
-            arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subConeMobilityandBalance")),
-            drivetrain.AutoBalanceCommand()));
-    routineMap.put(
-        "subCubeMobilityandBalance",
-        new SequentialCommandGroup(
-            gripper.intakeCommand(),
-            arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
-            arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subCubeMobilityandBalance")),
-            drivetrain.AutoBalanceCommand()));
+            drivetrain.mobilityAuto()));
+    /*routineMap.put(
+    "subConeMobilityandBalance",
+    new SequentialCommandGroup(
+        gripper.intakeCommand(),
+        arm.gotoState(armState.L3),
+        armGripperCommands.placeCommand(),
+        arm.gotoState(armState.HOME),
+        drivetrain.followPath(paths.get("subConeMobilityandBalance")),
+        drivetrain.AutoBalanceCommand()));*/
+    /*routineMap.put(
+    "subCubeMobilityandBalance",
+    new SequentialCommandGroup(
+        gripper.intakeCommand(),
+        arm.gotoState(armState.L3),
+        armGripperCommands.placeCommand(),
+        arm.gotoState(armState.HOME),
+        drivetrain.followPath(paths.get("subCubeMobilityandBalance")),
+        drivetrain.AutoBalanceCommand()));*/
 
     // far routines -----------------------------------------------------
     routineMap.put(
@@ -95,23 +99,23 @@ public class AutoRoutines {
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("farConeMobility"))));
+            drivetrain.mobilityAuto()));
     routineMap.put(
         "farCubeMobility",
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("farCubeMobility"))));
-    routineMap.put(
+            drivetrain.mobilityAuto()));
+    /*routineMap.put(
         "farConeMobilityandBalance",
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("farConeMobilityandBalance")),
             drivetrain.AutoBalanceCommand()));
@@ -120,18 +124,19 @@ public class AutoRoutines {
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("farCubeMobilityandBalance")),
-            drivetrain.AutoBalanceCommand()));
+            drivetrain.AutoBalanceCommand()));*/
 
+    /*
     // mid routines -----------------------------------------------------
     routineMap.put(
         "midConeandBalance",
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("midConeandBalance")),
             drivetrain.AutoBalanceCommand()));
@@ -140,26 +145,30 @@ public class AutoRoutines {
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
-            gripper.ejectCommand(),
+            armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("midCubeandBalance")),
-            drivetrain.AutoBalanceCommand()));
+            drivetrain.AutoBalanceCommand()));*/
   }
 
   private void loadPaths() {
     paths.put(
         "farConeMobility",
         PathPlanner.loadPath(
-            "farConeMobility", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            "farConeMobility",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            false));
     paths.put(
         "farConeMobilityandBalance",
         PathPlanner.loadPath(
             "farConeMobilityandBalance",
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
     paths.put(
-        "farCubMobility",
+        "farCubeMobility",
         PathPlanner.loadPath(
-            "farCubMobility", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            "farCubeMobility",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            false));
     paths.put(
         "farCubeMobilityandBalance",
         PathPlanner.loadPath(

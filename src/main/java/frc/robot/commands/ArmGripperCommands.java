@@ -20,7 +20,7 @@ public class ArmGripperCommands {
     this.gripper = gripper;
   }
 
-  public Command placeCommad() {
+  public Command placeCommand() {
     return arm.simpleMove(.03, kAuto.placeDrop)
         .unless(() -> arm.getArmState() != armState.L3 && arm.getArmState() != armState.L2)
         .andThen(gripper.ejectCommand());

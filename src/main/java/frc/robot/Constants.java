@@ -48,10 +48,10 @@ public final class Constants {
     public static final double chargeStopAngle = 11;
     public static final double tipTimeout = 0.9;
     public static final double creepTimeout = 8;
-    public static final double mobilityTime = 0.5;
+    public static final double mobilityTime = 8;
     public static final double placeDrop = -.12;
-    public static final double velConstraint = 2;
-    public static final double accConstraint = 1.5;
+    public static final double velConstraint = .25;
+    public static final double accConstraint = 0.25;
   }
 
   public static final class kGripper {
@@ -65,7 +65,7 @@ public final class Constants {
     public static final double holdingVoltageKube = 0.6;
     public static final int stallCurrentLimit = 5;
     public static final int freeCurrentLimit = 7;
-    public static final double ejectTime = 0.25;
+    public static final double ejectTime = 0.35;
   }
 
   public static final class kArm {
@@ -214,7 +214,7 @@ public final class Constants {
     }
 
     public static final class PathFollowing {
-      public static final Vector<N5> qelems = VecBuilder.fill(.0625, .0625, 2.5, .95, .95);
+      public static final Vector<N5> qelems = VecBuilder.fill(.0925, .0925, 3, .95, .95);
       public static final Vector<N2> relems = VecBuilder.fill(12.0, 12.0);
     }
 

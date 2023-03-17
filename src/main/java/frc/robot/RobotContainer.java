@@ -39,7 +39,8 @@ public class RobotContainer {
   private final Arm arm = new Arm();
   private final Gripper gripper = new Gripper();
   private final ArmGripperCommands armGripperCommands = new ArmGripperCommands(arm, gripper);
-  private final AutoRoutines autoRoutines = new AutoRoutines(drivetrain, arm, gripper);
+  private final AutoRoutines autoRoutines =
+      new AutoRoutines(drivetrain, arm, gripper, armGripperCommands);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -79,7 +80,7 @@ public class RobotContainer {
         .button(Bindings.intake)
         .toggleOnTrue(armGripperCommands.intakeCommand(() -> armJoystick.getThrottle() < 0.5));
 
-    armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommad());
+    armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommand());
 
     armJoystick.pov(0).whileTrue(new TurretManual(() -> -0.5 * armJoystick.getTwist(), arm));
     armJoystick.pov(180).onTrue(arm.turretHome());
