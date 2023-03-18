@@ -209,7 +209,7 @@ public class Arm extends SubsystemBase {
     }
 
     // Go through neutral or go to/from home
-    if (state != armState.HOME && targetState != armState.HOME) {
+    if (trajState != armState.HOME && targetState != armState.HOME) {
       trajectory =
           trajectory.concatenate(
               trajectoryMap.getTrajectory(

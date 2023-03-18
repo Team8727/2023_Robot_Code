@@ -68,7 +68,7 @@ public class AutoRoutines {
         "Yeet",
         gripper
             .intakeCommand()
-            .andThen(arm.gotoState(armState.L3))
+            .andThen(arm.gotoState(armState.L2))
             .andThen(gripper.yeet())
             .andThen(arm.gotoState(armState.HOME)));
 
