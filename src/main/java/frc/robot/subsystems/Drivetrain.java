@@ -179,10 +179,13 @@ public class Drivetrain extends SubsystemBase {
   // -------------------- Drivetrain commands --------------------
 
   public Command AutoBalanceCommand() {
-    return this.startEnd(
-            () -> driveVoltages(kAuto.chargeTipVoltage, kAuto.chargeTipVoltage),
-            () -> driveVoltages(0, 0))
-        .withTimeout(kAuto.tipTimeout)
+    return this.runOnce(() -> driveVoltages(-4, -4))
+        .withTimeout(.25)
+        .andThen(
+            this.startEnd(
+                () -> driveVoltages(kAuto.chargeTipVoltage, kAuto.chargeTipVoltage),
+                () -> driveVoltages(0, 0)))
+        .withTimeout(kAuto.tipTimeout - .25)
         .andThen(
             this.startEnd(
                     () -> driveVoltages(kAuto.chargeCreepVoltage, kAuto.chargeCreepVoltage),

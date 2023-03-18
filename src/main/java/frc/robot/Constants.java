@@ -43,10 +43,10 @@ public final class Constants {
   }
 
   public static final class kAuto {
-    public static final double chargeTipVoltage = -4;
+    public static final double chargeTipVoltage = -6.5;
     public static final double chargeCreepVoltage = -1;
     public static final double chargeStopAngle = -11;
-    public static final double tipTimeout = 0.9;
+    public static final double tipTimeout = 1.9;
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
     public static final double placeDrop = -.12;
@@ -70,10 +70,10 @@ public final class Constants {
 
   public static final class kArm {
     public static final class Constraints {
-      public static final double proximalVelocity = 2.1;
-      public static final double proximalAcceleration = 0.7;
-      public static final double forearmVelocity = 2.3;
-      public static final double forearmAcceleration = 0.6;
+      public static final double proximalVelocity = 1.8;
+      public static final double proximalAcceleration = 0.65;
+      public static final double forearmVelocity = 2.4;
+      public static final double forearmAcceleration = 0.75;
       public static final double turretAcceleration = 0.5;
     }
 
@@ -151,10 +151,10 @@ public final class Constants {
     }
 
     public static final class Feedback {
-      public static final double proximal_kP = 12;
-      public static final double proximal_kD = 1;
-      public static final double forearm_kP = 22;
-      public static final double forearm_kD = 1;
+      public static final double proximal_kP = 14;
+      public static final double proximal_kD = 3;
+      public static final double forearm_kP = 26;
+      public static final double forearm_kD = 3;
     }
   }
 
@@ -203,12 +203,12 @@ public final class Constants {
     public static final class Rate {
       // Speeds in m/s rotations in rad/s
       public static final double maxSpeed = 4.7;
-      public static final double maxAccel = 0.9 * 9.81;
+      public static final double maxAccel = 8.5;
       public static final double maxAngularSpeed = 5;
       public static final double maxAngularAccel = 8;
       public static final double driverSpeed = 3;
       public static final double driverAngularSpeed = 3;
-      public static final double driverAccel = 10;
+      public static final double driverAccel = 8.5;
       public static final double driverAngularAccel = 5;
       public static final double precisionSpeed = 1;
     }
