@@ -56,6 +56,21 @@ public class AutoRoutines {
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME)));
     routineMap.put("Balance Only", drivetrain.AutoBalanceCommand());
+    routineMap.put(
+        "Yeet Balance",
+        gripper
+            .intakeCommand()
+            .andThen(arm.gotoState(armState.L3))
+            .andThen(gripper.yeet())
+            .andThen(arm.gotoState(armState.HOME))
+            .andThen(drivetrain.AutoBalanceCommand()));
+    routineMap.put(
+        "Yeet",
+        gripper
+            .intakeCommand()
+            .andThen(arm.gotoState(armState.L3))
+            .andThen(gripper.yeet())
+            .andThen(arm.gotoState(armState.HOME)));
 
     // sub routines -----------------------------------------------------
     routineMap.put(

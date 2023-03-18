@@ -33,7 +33,7 @@ public class ArmDefaultTrajectories {
     trajectories.put("GROUND_HOME", trajectories.get("HOME_GROUND").reverse());
 
     start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.16, 1.20, 0, 0);
-    mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.1, -0.5);
+    mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.2, -0.5);
     end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
     trajectories.put(
         "L3_HOME",

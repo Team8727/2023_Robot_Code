@@ -187,7 +187,7 @@ public class Drivetrain extends SubsystemBase {
             this.startEnd(
                     () -> driveVoltages(kAuto.chargeCreepVoltage, kAuto.chargeCreepVoltage),
                     () -> driveVoltages(0, 0))
-                .until(() -> getRoll() < kAuto.chargeStopAngle)
+                .until(() -> getRoll() > kAuto.chargeStopAngle)
                 .withTimeout(kAuto.creepTimeout));
   }
 

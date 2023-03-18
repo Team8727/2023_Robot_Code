@@ -115,6 +115,17 @@ public class Gripper extends SubsystemBase {
         .andThen(this.runOnce(() -> setVoltage(0)));
   }
 
+  public Command yeet() {
+    return this.startEnd(
+            () -> setVoltage(-12),
+            () -> {
+              gripperState = GamePiece.NONE;
+            })
+        .until(() -> getGamePiece() == GamePiece.NONE)
+        .andThen(new WaitCommand(kGripper.ejectTime))
+        .andThen(this.runOnce(() -> setVoltage(0)));
+  }
+
   public Command holdCommand() {
     return this.runOnce(
         () -> {
