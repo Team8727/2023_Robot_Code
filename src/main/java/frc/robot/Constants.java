@@ -43,9 +43,9 @@ public final class Constants {
   }
 
   public static final class kAuto {
-    public static final double chargeTipVoltage = 4;
-    public static final double chargeCreepVoltage = 1;
-    public static final double chargeStopAngle = 11;
+    public static final double chargeTipVoltage = -4;
+    public static final double chargeCreepVoltage = -1;
+    public static final double chargeStopAngle = -11;
     public static final double tipTimeout = 0.9;
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
@@ -63,17 +63,17 @@ public final class Constants {
     public static final double ejectVoltage = -2;
     public static final double holdingVoltageCone = 0.6;
     public static final double holdingVoltageKube = 0.6;
-    public static final int stallCurrentLimit = 5;
-    public static final int freeCurrentLimit = 7;
+    public static final int stallCurrentLimit = 7;
+    public static final int freeCurrentLimit = 12;
     public static final double ejectTime = 0.35;
   }
 
   public static final class kArm {
     public static final class Constraints {
-      public static final double proximalVelocity = 2;
-      public static final double proximalAcceleration = 0.65;
-      public static final double forearmVelocity = 2;
-      public static final double forearmAcceleration = 0.5;
+      public static final double proximalVelocity = 2.1;
+      public static final double proximalAcceleration = 0.7;
+      public static final double forearmVelocity = 2.3;
+      public static final double forearmAcceleration = 0.6;
       public static final double turretAcceleration = 0.5;
     }
 
