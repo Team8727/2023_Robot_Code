@@ -186,6 +186,13 @@ public final class Constants {
         public static final double kA = 0.27961;
       }
     }
+    // PID
+    // TODO tune these
+    public static final class PID {
+      public static final double kP = 0;
+      public static final double kI = 0;
+      public static final double kD = 0;
+    }
 
     public static final class Dimensions {
       public static final double wheelCircumferenceMeters = Units.inchesToMeters(6 * Math.PI);

@@ -8,6 +8,7 @@ import static edu.wpi.first.math.system.plant.LinearSystemId.identifyDrivetrainS
 
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.commands.PPRamseteCommand;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
@@ -16,7 +17,9 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.DifferentialDriveFeedforward;
 import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
-import edu.wpi.first.math.controller.LTVDifferentialDriveController;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.RamseteController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -48,9 +51,11 @@ import frc.robot.Constants.CanId;
 import frc.robot.Constants.OperatorInterface.DeadZones;
 import frc.robot.Constants.kAuto;
 import frc.robot.Constants.kDrivetrain.*;
+import frc.robot.Constants.kDrivetrain.Feedforward.Linear;
+import frc.robot.Constants.kDrivetrain.PID;
 import frc.robot.Constants.kVision;
-import frc.robot.commands.PPLTVControllerCommand;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
@@ -84,13 +89,11 @@ public class Drivetrain extends SubsystemBase {
           Feedforward.Angular.kV,
           Feedforward.Angular.kA,
           Dimensions.trackWidthMeters);
-  private LTVDifferentialDriveController ltvController =
-      new LTVDifferentialDriveController(
-          drivetrainModel,
-          Dimensions.trackWidthMeters,
-          PathFollowing.qelems,
-          PathFollowing.relems,
-          20.0 / 1000.0);
+  private PIDController leftPIDcontroller = new PIDController(PID.kP, PID.kI, PID.kD);
+  private PIDController rightPIDcontroller = new PIDController(PID.kP, PID.kI, PID.kD);
+  private SimpleMotorFeedforward simpleFeedForward =
+      new SimpleMotorFeedforward(Linear.kS, Linear.kV, Linear.kA);
+  private RamseteController ramseteController = new RamseteController();
   private DifferentialDriveKinematics driveKinematics =
       new DifferentialDriveKinematics(Dimensions.trackWidthMeters);
 
@@ -182,8 +185,17 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public Command followPath(PathPlannerTrajectory path) {
-    return new PPLTVControllerCommand(
-        path, this::getPose, ltvController, this::getSpeeds, this::driveVoltages, this);
+    return new PPRamseteCommand(
+        path,
+        this::getPose,
+        ramseteController,
+        simpleFeedForward,
+        driveKinematics,
+        this::getSpeeds,
+        leftPIDcontroller,
+        rightPIDcontroller,
+        driveVoltagesBiConsumer,
+        this);
   }
 
   public Command mobilityAuto() {
@@ -272,6 +284,12 @@ public class Drivetrain extends SubsystemBase {
     rightMotorGroup.setVoltage(voltages.right);
     logVoltages.append(new double[] {voltages.left, voltages.right});
   }
+
+  public BiConsumer<Double, Double> driveVoltagesBiConsumer =
+      (leftVoltage, rightVoltage) -> {
+        leftMotorGroup.setVoltage(leftVoltage);
+        rightMotorGroup.setVoltage(rightVoltage);
+      };
 
   // Encoder and gyro methods
   public double getLeftDistance() {
