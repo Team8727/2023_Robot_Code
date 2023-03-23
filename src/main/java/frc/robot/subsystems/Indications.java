@@ -13,7 +13,6 @@ public class Indications extends SubsystemBase {
   private AddressableLEDBuffer armLEDsBuffer;
   private LEDSubStrip proximalLeftStrip;
   private int tick = 0;
-  private boolean partyMode = false;
 
   public Indications() {
     // TODO Add constants for start and end locations and move strip constants out of kSensors
@@ -69,7 +68,7 @@ public class Indications extends SubsystemBase {
           && (i % sectionSize) + 1 < (interval + sectionSize) / kIndications.maxTick) {
         section.setLED(i, color);
       } else {
-        section.setRGB(i, 0, 0, 0);
+        section.setLED(i, Color.kBlack);
       }
     }
   }
@@ -93,19 +92,10 @@ public class Indications extends SubsystemBase {
 
     // increment tick
     tick = (tick + 1) % kIndications.maxTick;
-
-    // check party mode and than either alternate or flashing rainbow
-    if (partyMode == false) {
-      // Alternates between black(off) and lime green
-      // Also slowTick exist because other wise it would alternate every single tick
-      // flashingRainbow doesn't need such tick because I hard coded it into the code to get both a
-      // flash and a rainbow
-      int slowTick = tick / (kIndications.maxTick / 2);
-      alternate(proximalLeftStrip, slowTick, Color.kLime, Color.kBlack);
-    } else {
-      // uses a flashing rainbow
-      flashingRainbow(proximalLeftStrip, tick);
-    }
+    // Alternates between black(off) and lime green
+    // Also slowTick exist because other wise it would alternate every single tick
+    int slowTick = tick / (kIndications.maxTick / 2);
+    alternate(proximalLeftStrip, slowTick, Color.kLime, Color.kBlack);
 
     // set LED
     armLEDs.setData(armLEDsBuffer);
