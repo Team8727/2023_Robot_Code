@@ -98,4 +98,16 @@ public class RobotContainer {
   public Command getTelopInitCommand() {
     return arm.gotoState(armState.HOME);
   }
+
+  public void reset() {
+    drivetrain.resetLimiters();
+  }
+
+  public void log() {
+    drivetrain.logEncoders();
+  }
+
+  public void encoderSample() {
+    drivetrain.sampleVelocity();
+  }
 }
