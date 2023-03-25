@@ -21,6 +21,7 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.RamseteController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -103,15 +104,13 @@ public class Drivetrain extends SubsystemBase {
   private DifferentialDriveWheelSpeeds lastSpeeds = new DifferentialDriveWheelSpeeds();
 
   private Encoder leftEncoder =
-      new Encoder(Encoders.leftAPort, Encoders.leftBPort, true, EncodingType.k4X);
+      new Encoder(Encoders.leftAPort, Encoders.leftBPort, true, EncodingType.k1X);
   private Encoder rightEncoder =
-      new Encoder(Encoders.rightAPort, Encoders.rightBPort, true, EncodingType.k4X);
+      new Encoder(Encoders.rightAPort, Encoders.rightBPort, true, EncodingType.k1X);
   private final AHRS gyro = new AHRS(Port.kMXP);
   private DifferentialDriveWheelSpeeds encoderVelocities = new DifferentialDriveWheelSpeeds();
-  private double lastLeftDistance = 0;
-  private double lastRightDistance = 0;
-  private Timer timer = new Timer();
-  private double lastTime = timer.get();
+  private LinearFilter leftAverage = LinearFilter.movingAverage(3);
+  private LinearFilter rightAverage = LinearFilter.movingAverage(3);
 
   // Create vision objects
   private PhotonCamera aprilTagCamera = new PhotonCamera("AprilTagCam");
@@ -141,6 +140,17 @@ public class Drivetrain extends SubsystemBase {
       new DoubleArrayLogEntry(log, "Drivetrain/poseEstimate");
   private DoubleArrayLogEntry logPhotonPose = new DoubleArrayLogEntry(log, "Drivetrain/photonPose");
   private DoubleLogEntry logGyro = new DoubleLogEntry(log, "Drivetrain/gyro");
+  private DoubleLogEntry logGyroPitch = new DoubleLogEntry(log, "Drivetrain/gyroPitch");
+
+  // TEMPORARY
+  private DoubleArrayLogEntry rawEncoderCounts =
+      new DoubleArrayLogEntry(log, "Testing/rawEncoderCounts");
+  private DoubleArrayLogEntry encoderDistance =
+      new DoubleArrayLogEntry(log, "Testing/encoderDistance");
+  private DoubleArrayLogEntry rawEncoderVelocity =
+      new DoubleArrayLogEntry(log, "Testing/rawEncoderVelocity");
+  private DoubleArrayLogEntry filteredVelocity =
+      new DoubleArrayLogEntry(log, "Testing/filteredVelocity");
 
   // Constructor taking no arguments, all relevant values are defined in Constants.java
   public Drivetrain() {
@@ -179,13 +189,11 @@ public class Drivetrain extends SubsystemBase {
   // -------------------- Drivetrain commands --------------------
 
   public Command AutoBalanceCommand() {
-    return this.runOnce(() -> driveVoltages(-4, -4))
-        .withTimeout(.25)
-        .andThen(
-            this.startEnd(
-                () -> driveVoltages(kAuto.chargeTipVoltage, kAuto.chargeTipVoltage),
-                () -> driveVoltages(0, 0)))
-        .withTimeout(kAuto.tipTimeout - .25)
+    return this.run(
+            () ->
+                driveWheelSpeeds(
+                    new DifferentialDriveWheelSpeeds(kAuto.chargeTipSpeed, kAuto.chargeTipSpeed)))
+        .withTimeout(kAuto.tipTimeout)
         .andThen(
             this.startEnd(
                     () -> driveVoltages(kAuto.chargeCreepVoltage, kAuto.chargeCreepVoltage),
@@ -224,6 +232,7 @@ public class Drivetrain extends SubsystemBase {
   public void brakeMode(boolean mode) {
     IdleMode nMode = IdleMode.kCoast;
     if (mode) nMode = IdleMode.kBrake;
+    nMode = IdleMode.kCoast;
 
     leftLead.setIdleMode(nMode);
     leftFollow.setIdleMode(nMode);
@@ -259,20 +268,21 @@ public class Drivetrain extends SubsystemBase {
     // Feedforward calculated with current velocity and next velcocity with timestep of 20ms
     // (default robot loop period)
     var nextChassisSpeeds = driveKinematics.toChassisSpeeds(wheelSpeeds);
-    wheelSpeeds =
+    var limitedWheelSpeeds =
         driveKinematics.toWheelSpeeds(
             new ChassisSpeeds(
                 accelLimiter.calculate(nextChassisSpeeds.vxMetersPerSecond),
                 0,
                 angularAccelLimter.calculate(nextChassisSpeeds.omegaRadiansPerSecond)));
+
     driveVoltages(
         DDFeedforward.calculate(
             lastSpeeds.leftMetersPerSecond,
-            wheelSpeeds.leftMetersPerSecond,
+            limitedWheelSpeeds.leftMetersPerSecond,
             lastSpeeds.rightMetersPerSecond,
-            wheelSpeeds.rightMetersPerSecond,
+            limitedWheelSpeeds.rightMetersPerSecond,
             20.0 / 1000.0));
-    lastSpeeds = wheelSpeeds;
+    lastSpeeds = limitedWheelSpeeds;
   }
 
   // Set the appropriate motor voltages for a desired set of linear and angular chassis speeds
@@ -345,6 +355,26 @@ public class Drivetrain extends SubsystemBase {
     return gyro.getRoll();
   }
 
+  public void resetLimiters() {
+    accelLimiter.reset(0);
+    angularAccelLimter.reset(0);
+  }
+
+  public void logEncoders() {
+    rawEncoderCounts.append(new double[] {leftEncoder.getRaw(), rightEncoder.getRaw()});
+    encoderDistance.append(new double[] {leftEncoder.getDistance(), rightEncoder.getDistance()});
+    rawEncoderVelocity.append(new double[] {leftEncoder.getRate(), rightEncoder.getRate()});
+    filteredVelocity.append(
+        new double[] {
+          encoderVelocities.leftMetersPerSecond, encoderVelocities.rightMetersPerSecond
+        });
+  }
+
+  public void sampleVelocity() {
+    encoderVelocities.leftMetersPerSecond = leftAverage.calculate(getLeftVelocity());
+    encoderVelocities.rightMetersPerSecond = rightAverage.calculate(getRightVelocity());
+  }
+
   // -------------------- Periodic methods --------------------
 
   @Override
@@ -356,15 +386,6 @@ public class Drivetrain extends SubsystemBase {
         getLeftDistance(),
         getRightDistance());
     robotField2d.setRobotPose(DDPoseEstimator.getEstimatedPosition());
-
-    encoderVelocities =
-        new DifferentialDriveWheelSpeeds(
-            (getLeftDistance() - lastLeftDistance) / (lastTime - timer.get()),
-            (getRightDistance() - lastRightDistance) / (lastTime - timer.get()));
-
-    lastLeftDistance = getLeftDistance();
-    lastRightDistance = getRightDistance();
-    lastTime = timer.get();
 
     // Get vision measurement and pass it to pose estimator
     AprilTagPoseEstimator.setReferencePose(DDPoseEstimator.getEstimatedPosition());
@@ -382,6 +403,7 @@ public class Drivetrain extends SubsystemBase {
           encoderVelocities.leftMetersPerSecond, encoderVelocities.rightMetersPerSecond
         });
     logGyro.append(getAngle());
+    logGyroPitch.append(getRoll());
     var estimatedPose = DDPoseEstimator.getEstimatedPosition();
     logPoseEstimate.append(
         new double[] {
@@ -418,8 +440,8 @@ public class Drivetrain extends SubsystemBase {
         Dimensions.wheelCircumferenceMeters / (Encoders.gearing * Encoders.PPR));
     rightEncoder.setDistancePerPulse(
         Dimensions.wheelCircumferenceMeters / (Encoders.gearing * Encoders.PPR));
-    leftEncoder.setSamplesToAverage(60);
-    rightEncoder.setSamplesToAverage(60);
+    leftEncoder.setSamplesToAverage(80);
+    rightEncoder.setSamplesToAverage(80);
   }
 
   private void shuffleBoardInit() {

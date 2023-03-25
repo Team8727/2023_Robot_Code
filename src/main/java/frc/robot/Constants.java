@@ -43,10 +43,10 @@ public final class Constants {
   }
 
   public static final class kAuto {
-    public static final double chargeTipVoltage = -6.5;
-    public static final double chargeCreepVoltage = -1;
+    public static final double chargeTipSpeed = -4;
+    public static final double chargeCreepVoltage = -1.25;
     public static final double chargeStopAngle = -11;
-    public static final double tipTimeout = 1.9;
+    public static final double tipTimeout = 1.75;
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
     public static final double placeDrop = -.12;
@@ -203,12 +203,12 @@ public final class Constants {
     public static final class Rate {
       // Speeds in m/s rotations in rad/s
       public static final double maxSpeed = 4.7;
-      public static final double maxAccel = 8.5;
+      public static final double maxAccel = 8.25;
       public static final double maxAngularSpeed = 5;
       public static final double maxAngularAccel = 8;
       public static final double driverSpeed = 3;
       public static final double driverAngularSpeed = 3;
-      public static final double driverAccel = 8.5;
+      public static final double driverAccel = 8.25;
       public static final double driverAngularAccel = 5;
       public static final double precisionSpeed = 1;
     }

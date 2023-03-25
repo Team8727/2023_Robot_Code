@@ -26,7 +26,6 @@ public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
   private RobotContainer m_robotContainer;
-
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -59,6 +58,8 @@ public class Robot extends TimedRobot {
     }
 
     DriverStation.startDataLog(DataLogManager.getLog());
+    addPeriodic(m_robotContainer::log, .01);
+    addPeriodic(m_robotContainer::encoderSample, .01);
   }
 
   /**
@@ -88,6 +89,7 @@ public class Robot extends TimedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
+    m_robotContainer.reset();
     m_robotContainer.getAutoCommand().schedule();
   }
 
@@ -97,6 +99,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
+    m_robotContainer.reset();
     // This makes sure that the autonomous stops running when
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove
