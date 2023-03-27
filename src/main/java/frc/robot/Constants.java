@@ -247,7 +247,10 @@ public final class Constants {
 
   public static final class kIndications {
     public static final int ledPort = 0;
-    public static final int ledLength = 300;
+    public static final int ledLength = 100;
+    public static final int proximalLeftLength = 32;
+    public static final int proximalRightLength = 32;
+    public static final int forearmLength = 36;
   }
 
   public enum GamePiece {

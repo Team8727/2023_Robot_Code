@@ -35,7 +35,6 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
-import edu.wpi.first.wpilibj2.command.ProxyCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -47,6 +46,7 @@ import frc.robot.commands.ArmTrajectoryCommand;
 import frc.robot.controls.DoubleJointedArmController;
 import frc.robot.utilities.ArmDefaultTrajectories;
 import frc.robot.utilities.ArmTrajectory;
+import frc.robot.utilities.DeferredCommand;
 import java.util.Map;
 
 public class Arm extends SubsystemBase {
@@ -163,11 +163,11 @@ public class Arm extends SubsystemBase {
   }
 
   public Command simpleMove(double xDelta, double yDelta) {
-    return new ProxyCommand(() -> simpleMoveGenerator(xDelta, yDelta));
+    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta));
   }
 
   public Command gotoState(armState targetState) {
-    return new ProxyCommand(() -> gotoStateGenerate(targetState))
+    return new DeferredCommand(() -> gotoStateGenerate(targetState))
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
@@ -194,6 +194,7 @@ public class Arm extends SubsystemBase {
   // -------------------- Private command suppliers --------------------
 
   private Command gotoStateGenerate(armState targetState) {
+    System.out.println(targetState.name());
     // Do nothing if already at state
     if (targetState == state) return new WaitCommand(0);
     ArmTrajectory trajectory = new ArmTrajectory();

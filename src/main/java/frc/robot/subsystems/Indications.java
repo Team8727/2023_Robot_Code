@@ -12,20 +12,33 @@ public class Indications extends SubsystemBase {
   private AddressableLED armLEDs;
   private AddressableLEDBuffer armLEDsBuffer;
 
-  @SuppressWarnings("unused")
   private LEDSubStrip proximalLeftStrip;
+  private LEDSubStrip proximalRightStrip;
+  private LEDSubStrip forearmStrip;
 
   public Indications() {
     // TODO Add constants for start and end locations and move strip constants out of kSensors
     armLEDs = new AddressableLED(kIndications.ledPort);
+    armLEDs.setLength(kIndications.ledLength);
     armLEDsBuffer = new AddressableLEDBuffer(kIndications.ledLength);
-    proximalLeftStrip = new LEDSubStrip(armLEDsBuffer, 0, 60);
+    proximalRightStrip = new LEDSubStrip(armLEDsBuffer, 0, kIndications.proximalLeftLength - 1);
+    forearmStrip =
+        new LEDSubStrip(
+            armLEDsBuffer,
+            kIndications.proximalLeftLength,
+            kIndications.proximalLeftLength + kIndications.forearmLength - 1,
+            true);
+    proximalLeftStrip =
+        new LEDSubStrip(
+            armLEDsBuffer,
+            kIndications.proximalLeftLength + kIndications.forearmLength,
+            kIndications.ledLength - 1);
     armLEDs.setData(armLEDsBuffer);
     armLEDs.start();
   }
 
   public void monotone(LEDSubStrip section, Color color) {
-    for (int i = 0; i <= section.getLength(); i++) {
+    for (int i = 0; i < section.getLength(); i++) {
       section.setLED(i, color);
     }
   }
@@ -63,12 +76,12 @@ public class Indications extends SubsystemBase {
     // finds many LEDS are in the section
     int sectionSize = section.getLength();
 
-    for (int i = 0; i <= section.getLength(); i++) {
+    for (int i = 0; i < section.getLength(); i++) {
       // finds where is the sequence the "chasing" LED is
       if ((i % sectionSize) == interval) {
-        armLEDsBuffer.setLED(i, color);
+        section.setLED(i, color);
       } else {
-        armLEDsBuffer.setRGB(i, 0, 0, 0);
+        section.setRGB(i, 0, 0, 0);
       }
     }
   }
@@ -76,6 +89,10 @@ public class Indications extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    monotone(proximalRightStrip, Color.kAliceBlue);
+    monotone(proximalLeftStrip, Color.kDarkRed);
+    runway(forearmStrip, Color.kPurple, 5);
+    armLEDs.setData(armLEDsBuffer);
   }
 
   @Override

@@ -44,7 +44,7 @@ public class LEDSubStrip {
    * @return the section length
    */
   public int getLength() {
-    return begin - end + 1;
+    return end - begin + 1;
   }
 
   /**
