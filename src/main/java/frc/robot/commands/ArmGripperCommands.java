@@ -23,7 +23,9 @@ public class ArmGripperCommands {
   public Command placeCommand() {
     return arm.simpleMove(.03, kAuto.placeDrop)
         .unless(() -> arm.getArmState() != armState.L3 && arm.getArmState() != armState.L2)
-        .andThen(gripper.ejectCommand());
+        .andThen(gripper.ejectCommand())
+        .andThen(arm.simpleMove(-.03, -kAuto.placeDrop))
+        .andThen(arm.gotoState(armState.HOME));
   }
 
   public Command intakeCommand(BooleanSupplier gamePieceSelector) {

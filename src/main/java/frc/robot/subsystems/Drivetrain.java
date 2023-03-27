@@ -22,6 +22,7 @@ import edu.wpi.first.math.controller.RamseteController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -109,6 +110,8 @@ public class Drivetrain extends SubsystemBase {
       new Encoder(Encoders.rightAPort, Encoders.rightBPort, true, EncodingType.k1X);
   private final AHRS gyro = new AHRS(Port.kMXP);
   private DifferentialDriveWheelSpeeds encoderVelocities = new DifferentialDriveWheelSpeeds();
+  private MedianFilter leftMedian = new MedianFilter(4);
+  private MedianFilter rightMedian = new MedianFilter(4);
   private LinearFilter leftAverage = LinearFilter.movingAverage(3);
   private LinearFilter rightAverage = LinearFilter.movingAverage(3);
 
@@ -232,7 +235,6 @@ public class Drivetrain extends SubsystemBase {
   public void brakeMode(boolean mode) {
     IdleMode nMode = IdleMode.kCoast;
     if (mode) nMode = IdleMode.kBrake;
-    nMode = IdleMode.kCoast;
 
     leftLead.setIdleMode(nMode);
     leftFollow.setIdleMode(nMode);
@@ -371,8 +373,10 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public void sampleVelocity() {
-    encoderVelocities.leftMetersPerSecond = leftAverage.calculate(getLeftVelocity());
-    encoderVelocities.rightMetersPerSecond = rightAverage.calculate(getRightVelocity());
+    encoderVelocities.leftMetersPerSecond =
+        leftAverage.calculate(leftMedian.calculate(getLeftVelocity()));
+    encoderVelocities.rightMetersPerSecond =
+        rightAverage.calculate(rightMedian.calculate(getRightVelocity()));
   }
 
   // -------------------- Periodic methods --------------------

@@ -48,6 +48,7 @@ public class AutoRoutines {
   // Auto paths go here
   private void loadRoutines() {
     routineMap.put("No Auto", gripper.intakeCommand());
+    routineMap.put("Testing", drivetrain.followPath(paths.get("subCubeMobility")));
     routineMap.put(
         "Place Only",
         new SequentialCommandGroup(
@@ -209,7 +210,9 @@ public class AutoRoutines {
     paths.put(
         "subCubeMobility",
         PathPlanner.loadPath(
-            "subCubeMobility", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            "subCubeMobility",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
     paths.put(
         "subCubeMobilityandBalance",
         PathPlanner.loadPath(
