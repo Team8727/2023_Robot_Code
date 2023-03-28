@@ -16,7 +16,6 @@ import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.system.NumericalIntegration;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleArrayLogEntry;
@@ -140,7 +139,7 @@ public class Arm extends SubsystemBase {
         new DoubleJointedArmController(
             Feedback.proximal_kP, Feedback.proximal_kD, Feedback.forearm_kP, Feedback.forearm_kD);
     resetArmFF(armSetpoint);
-    trajectoryMap = new ArmDefaultTrajectories(this);
+    trajectoryMap = new ArmDefaultTrajectories();
 
     // Start telemetry
     telemetryInit();
@@ -149,11 +148,11 @@ public class Arm extends SubsystemBase {
   // -------------------- Arm movement commands --------------------
 
   public Command simpleTrajectory(double startx, double starty, double endx, double endy) {
-    var profile =
-        motionProfile(
-            new MatBuilder<N2, N1>(Nat.N2(), Nat.N1()).fill(startx, starty),
-            new MatBuilder<N2, N1>(Nat.N2(), Nat.N1()).fill(endx, endy));
-    return new ArmTrajectoryCommand(new ArmTrajectory(profile), this)
+    return new ArmTrajectoryCommand(
+            new ArmTrajectory(
+                new MatBuilder<N4, N1>(Nat.N4(), Nat.N1()).fill(startx, starty, 0, 0),
+                new MatBuilder<N4, N1>(Nat.N4(), Nat.N1()).fill(endx, endy, 0, 0)),
+            this)
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
@@ -243,7 +242,7 @@ public class Arm extends SubsystemBase {
   // Find Ben if you want the math
 
   // 2d kinematics: angles -> xy
-  public Matrix<N2, N1> kinematics2D(Matrix<N2, N1> matrixSE) {
+  public static Matrix<N2, N1> kinematics2D(Matrix<N2, N1> matrixSE) {
     double xG =
         Proximal.length * Math.cos(matrixSE.get(0, 0))
             + Forearm.length * Math.cos(matrixSE.get(0, 0) + matrixSE.get(1, 0));
@@ -254,7 +253,7 @@ public class Arm extends SubsystemBase {
   }
 
   // 3d kinematic: angles -> xyz
-  public Matrix<N3, N1> kinematics3D(Matrix<N3, N1> matrixSETurret) {
+  public static Matrix<N3, N1> kinematics3D(Matrix<N3, N1> matrixSETurret) {
     double xG =
         (Proximal.length * Math.cos(matrixSETurret.get(0, 0))
                 + Forearm.length * Math.cos(matrixSETurret.get(1, 0)))
@@ -270,7 +269,7 @@ public class Arm extends SubsystemBase {
   }
 
   // inverse 2d kinematics: xy -> angles
-  public Matrix<N2, N1> inverseKinematics(Matrix<N2, N1> matrixXY) {
+  public static Matrix<N2, N1> inverseKinematics(Matrix<N2, N1> matrixXY) {
     double r = Math.sqrt(Math.pow(matrixXY.get(0, 0), 2) + Math.pow(matrixXY.get(1, 0), 2));
     double theta_s =
         Math.atan(matrixXY.get(1, 0) / matrixXY.get(0, 0))
@@ -283,54 +282,6 @@ public class Arm extends SubsystemBase {
                 (Math.pow(r, 2) + Math.pow(Forearm.length, 2) - Math.pow(Proximal.length, 2))
                     / (2 * r * Forearm.length));
     return new MatBuilder<>(Nat.N2(), Nat.N1()).fill(theta_s, theta_e - theta_s);
-  }
-
-  // -------------------- Trajectory profile generators --------------------
-
-  // Generate joint-space trapozidal motion profiles
-  public Pair<TrapezoidProfile, TrapezoidProfile> motionProfileVelocity(
-      Matrix<N4, N1> startState, Matrix<N4, N1> endState) {
-    // Inverse Kinematics to get the Thetas
-    Matrix<N2, N1> initialThetas =
-        inverseKinematics(startState.block(2, 1, 0, 0)); // Shoulder, then Elbow
-    Matrix<N2, N1> endThetas = inverseKinematics(endState.block(2, 1, 0, 0));
-    // Create the Motion Profiles
-    TrapezoidProfile profileShoulder =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.proximalVelocity, Constraints.proximalAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(0, 0), endState.get(2, 0)), // endpoint
-            new TrapezoidProfile.State(
-                initialThetas.get(0, 0), startState.get(2, 0))); // startpoint
-    TrapezoidProfile profileElbow =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.forearmVelocity, Constraints.forearmAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(1, 0), endState.get(3, 0)), // endpoint
-            new TrapezoidProfile.State(
-                initialThetas.get(1, 0), startState.get(3, 0))); // startpoint
-    return new Pair<>(profileShoulder, profileElbow); // Return as pair
-  }
-
-  public Pair<TrapezoidProfile, TrapezoidProfile> motionProfile(
-      Matrix<N2, N1> startXY, Matrix<N2, N1> endXY) {
-    // Inverse Kinematics to get the Thetas
-    Matrix<N2, N1> initialThetas = inverseKinematics(startXY); // Shoulder, then Elbow
-    Matrix<N2, N1> endThetas = inverseKinematics(endXY);
-    // Create the Motion Profiles
-    TrapezoidProfile profileShoulder =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.proximalVelocity, Constraints.proximalAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(0, 0), 0), // endpoint
-            new TrapezoidProfile.State(initialThetas.get(0, 0), 0)); // startpoint
-    TrapezoidProfile profileElbow =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.forearmVelocity, Constraints.forearmAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(1, 0), 0), // endpoint
-            new TrapezoidProfile.State(initialThetas.get(1, 0), 0)); // startpoint
-    return new Pair<>(profileShoulder, profileElbow); // Return as pair
   }
 
   // -------------------- Public interface methods --------------------
