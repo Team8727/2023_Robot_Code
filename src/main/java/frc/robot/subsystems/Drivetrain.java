@@ -4,8 +4,6 @@
 
 package frc.robot.subsystems;
 
-import static edu.wpi.first.math.system.plant.LinearSystemId.identifyDrivetrainSystem;
-
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
@@ -83,14 +81,6 @@ public class Drivetrain extends SubsystemBase {
   private final MotorControllerGroup rightMotorGroup =
       new MotorControllerGroup(rightLead, rightFollow);
 
-  // Create Drivetrain controllers and kinematics objects
-  private LinearSystem<N2, N2, N2> drivetrainModel =
-      identifyDrivetrainSystem(
-          Feedforward.Linear.kV,
-          Feedforward.Linear.kA,
-          Feedforward.Angular.kV,
-          Feedforward.Angular.kA,
-          Dimensions.trackWidthMeters);
   private DifferentialDriveFeedforward DDFeedforward =
       new DifferentialDriveFeedforward(
           Feedforward.Linear.kV,
