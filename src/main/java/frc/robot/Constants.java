@@ -49,7 +49,7 @@ public final class Constants {
     public static final double tipTimeout = 1.75;
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
-    public static final double placeDrop = -.12;
+    public static final double placeDrop = -.18;
     public static final double velConstraint = 1;
     public static final double accConstraint = 0.5;
   }
@@ -70,11 +70,19 @@ public final class Constants {
 
   public static final class kArm {
     public static final class Constraints {
-      public static final double proximalVelocity = 1.8;
-      public static final double proximalAcceleration = 0.65;
-      public static final double forearmVelocity = 2.4;
-      public static final double forearmAcceleration = 0.75;
+      public static final class Proximal {
+        public static final double velocity = 1.8;
+        public static final double acceleration = 0.65;
+      }
+
+      public static final class Forearm {
+        public static final double velocity = 2.4;
+        public static final double acceleration = 0.75;
+      }
+
       public static final double turretAcceleration = 0.5;
+      public static final double linearVelocity = .8;
+      public static final double linearAcceleration = 1;
     }
 
     public static final class Motors {
@@ -266,6 +274,8 @@ public final class Constants {
     GROUND,
     DOUBLESUB,
     L2,
-    L3
+    L3,
+    L2PLACED,
+    L3PLACED
   }
 }
