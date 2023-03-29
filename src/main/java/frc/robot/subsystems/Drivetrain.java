@@ -8,6 +8,7 @@ import static edu.wpi.first.math.system.plant.LinearSystemId.identifyDrivetrainS
 
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
 import com.pathplanner.lib.commands.PPRamseteCommand;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
@@ -26,17 +27,20 @@ import edu.wpi.first.math.filter.MedianFilter;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
+import edu.wpi.first.math.trajectory.Trajectory.State;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleArrayLogEntry;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.Timer;
@@ -56,6 +60,8 @@ import frc.robot.Constants.kDrivetrain.*;
 import frc.robot.Constants.kDrivetrain.Feedforward.Linear;
 import frc.robot.Constants.kDrivetrain.PID;
 import frc.robot.Constants.kVision;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.photonvision.EstimatedRobotPose;
@@ -206,17 +212,85 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public Command followPath(PathPlannerTrajectory path) {
-    return new PPRamseteCommand(
-        path,
-        this::getPose,
-        ramseteController,
-        simpleFeedForward,
-        driveKinematics,
-        this::getSpeeds,
-        leftPIDcontroller,
-        rightPIDcontroller,
-        driveVoltagesBiConsumer,
-        this);
+    return this.runOnce(() -> setPose(path.getInitialPose()))
+        .andThen(
+            new PPRamseteCommand(
+                path,
+                this::getPose,
+                ramseteController,
+                simpleFeedForward,
+                driveKinematics,
+                this::getSpeeds,
+                leftPIDcontroller,
+                rightPIDcontroller,
+                driveVoltagesBiConsumer,
+                this));
+  }
+
+  public Command generatePath(PathPlannerTrajectory path) {
+    PathPlannerTrajectory newPath = transformTrajectory(path, DriverStation.getAlliance());
+    return this.runOnce(() -> setPose(newPath.getInitialPose()))
+        .andThen(
+            new PPRamseteCommand(
+                newPath,
+                this::getPose,
+                ramseteController,
+                simpleFeedForward,
+                driveKinematics,
+                this::getSpeeds,
+                leftPIDcontroller,
+                rightPIDcontroller,
+                driveVoltagesBiConsumer,
+                this));
+  }
+
+  public static PathPlannerTrajectory transformTrajectory(
+      PathPlannerTrajectory trajectory, DriverStation.Alliance alliance) {
+    if (alliance == DriverStation.Alliance.Red) {
+      List<State> transformedStates = new ArrayList<>();
+
+      for (State s : trajectory.getStates()) {
+        PathPlannerState state = (PathPlannerState) s;
+
+        transformedStates.add(transformState(state, alliance));
+      }
+
+      return new PathPlannerTrajectory(
+          transformedStates,
+          trajectory.getMarkers(),
+          trajectory.getStartStopEvent(),
+          trajectory.getEndStopEvent(),
+          trajectory.fromGUI);
+    } else {
+      return trajectory;
+    }
+  }
+
+  private static PathPlannerState transformState(
+      PathPlannerState state, DriverStation.Alliance alliance) {
+    if (alliance == DriverStation.Alliance.Red) {
+      // Create a new state so that we don't overwrite the original
+      PathPlannerState transformedState = new PathPlannerState();
+
+      Translation2d transformedTranslation =
+          new Translation2d(16.54 - state.poseMeters.getX(), state.poseMeters.getY());
+      Rotation2d transformedHeading = new Rotation2d(Math.PI).minus(state.poseMeters.getRotation());
+      Rotation2d transformedHolonomicRotation =
+          new Rotation2d(Math.PI).minus(state.holonomicRotation);
+
+      transformedState.timeSeconds = state.timeSeconds;
+      transformedState.velocityMetersPerSecond = state.velocityMetersPerSecond;
+      transformedState.accelerationMetersPerSecondSq = state.accelerationMetersPerSecondSq;
+      transformedState.poseMeters = new Pose2d(transformedTranslation, transformedHeading);
+      transformedState.angularVelocityRadPerSec = -state.angularVelocityRadPerSec;
+      transformedState.holonomicRotation = transformedHolonomicRotation;
+      transformedState.holonomicAngularVelocityRadPerSec = -state.holonomicAngularVelocityRadPerSec;
+      transformedState.curvatureRadPerMeter = -state.curvatureRadPerMeter;
+
+      return transformedState;
+    } else {
+      return state;
+    }
   }
 
   public Command mobilityAuto() {
@@ -459,5 +533,7 @@ public class Drivetrain extends SubsystemBase {
         .withWidget(BuiltInWidgets.kField)
         .withSize(7, 4)
         .withPosition(2, 0);
+    SBTab.add("left PID", leftPIDcontroller);
+    SBTab.add("right PID", rightPIDcontroller);
   }
 }
