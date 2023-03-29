@@ -43,14 +43,14 @@ public class ArmTrajectory {
     TrapezoidProfile shoulderProfile =
         new TrapezoidProfile(
             new TrapezoidProfile.Constraints(
-                Constraints.proximalVelocity, Constraints.proximalAcceleration), // contraints
+                Constraints.Proximal.velocity, Constraints.Proximal.acceleration), // contraints
             new TrapezoidProfile.State(endThetas.get(0, 0), endState.get(2, 0)), // endpoint
             new TrapezoidProfile.State(
                 initialThetas.get(0, 0), startState.get(2, 0))); // startpoint
     TrapezoidProfile elbowProfile =
         new TrapezoidProfile(
             new TrapezoidProfile.Constraints(
-                Constraints.forearmVelocity, Constraints.forearmAcceleration), // contraints
+                Constraints.Forearm.velocity, Constraints.Forearm.acceleration), // contraints
             new TrapezoidProfile.State(endThetas.get(1, 0), endState.get(3, 0)), // endpoint
             new TrapezoidProfile.State(
                 initialThetas.get(1, 0), startState.get(3, 0))); // startpoint
@@ -70,6 +70,41 @@ public class ArmTrajectory {
                       shoulderState.velocity,
                       elbowState.velocity)));
     }
+  }
+
+  public static ArmTrajectory linearArmTrajectory(Matrix<N2, N1> start, Matrix<N2, N1> end) {
+    if (!Arm.validPosition(end) || !Arm.validPosition(end)) {
+      throw new IllegalArgumentException("Start or End is out of bounds!");
+    }
+
+    double distance =
+        Math.sqrt(
+            Math.pow(end.minus(start).get(0, 0), 2) + Math.pow(end.minus(start).get(1, 0), 2));
+
+    var linearPath =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(
+                Constraints.linearVelocity, Constraints.linearAcceleration),
+            new TrapezoidProfile.State(0, 0),
+            new TrapezoidProfile.State(distance, 0));
+
+    var states = new ArrayList<State>();
+    var prev = start;
+    for (double t = 0; t <= linearPath.totalTime(); t += 20.0 / 1000.0) {
+      var xy = start.plus(end.minus(start).times(t / linearPath.totalTime()));
+      var joints = Arm.inverseKinematics(xy);
+      var prevJoints = Arm.inverseKinematics(prev);
+      var jointSpeeds = joints.minus(prevJoints).div(20.0 / 1000.0);
+      var state = new Matrix<N4, N1>(Nat.N4(), Nat.N1());
+
+      state.assignBlock(0, 0, joints);
+      state.assignBlock(2, 0, jointSpeeds);
+      prev = xy;
+
+      states.add(new State(t, state));
+    }
+
+    return new ArmTrajectory(states);
   }
 
   private static double lerp(double startValue, double endValue, double t) {
