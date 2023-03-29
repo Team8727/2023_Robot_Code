@@ -42,6 +42,8 @@ public class RobotContainer {
   private final ArmGripperCommands armGripperCommands = new ArmGripperCommands(arm, gripper);
   private final AutoRoutines autoRoutines =
       new AutoRoutines(drivetrain, arm, gripper, armGripperCommands);
+
+  @SuppressWarnings("unused")
   private final Indications indications = new Indications();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
