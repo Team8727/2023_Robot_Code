@@ -162,12 +162,11 @@ public class Arm extends SubsystemBase {
   }
 
   public Command simpleMove(double xDelta, double yDelta) {
-    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta));
+    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta), this);
   }
 
   public Command gotoState(armState targetState) {
-    return new DeferredCommand(() -> gotoStateGenerate(targetState))
-        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
+    return new DeferredCommand(() -> gotoStateGenerate(targetState), this);
   }
 
   // -------------------- Turret movement commands --------------------
@@ -284,6 +283,15 @@ public class Arm extends SubsystemBase {
     return new MatBuilder<>(Nat.N2(), Nat.N1()).fill(theta_s, theta_e - theta_s);
   }
 
+  // Checks if an xy pair is a valid end effector position
+  public static boolean validPosition(Matrix<N2, N1> xy) {
+    if (Math.sqrt(Math.pow(xy.get(0, 0), 2) + Math.pow(xy.get(1, 0), 2))
+        > Forearm.length + Proximal.length) return false;
+    if (xy.get(1, 0) < -.11) return false;
+    if (xy.get(0, 0) > 0) return false;
+    return true;
+  }
+
   // -------------------- Public interface methods --------------------
 
   public void setArmSetpoint(Matrix<N4, N1> setpoint) {
@@ -318,6 +326,7 @@ public class Arm extends SubsystemBase {
 
   @Override
   public void periodic() {
+    if (this.getCurrentCommand() != null) System.out.println(getCurrentCommand().getName());
     // Check for encoder init
 
     // Calculate voltages
