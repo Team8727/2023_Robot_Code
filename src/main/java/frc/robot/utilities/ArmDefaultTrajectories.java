@@ -7,6 +7,7 @@ import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N4;
 import frc.robot.Constants.armState;
+import frc.robot.Constants.kAuto;
 import java.util.HashMap;
 
 public class ArmDefaultTrajectories {
@@ -31,8 +32,21 @@ public class ArmDefaultTrajectories {
     trajectories.put("L3_HOME", complexProfile(start, mid).concatenate(complexProfile(mid, end)));
     trajectories.put("HOME_L3", trajectories.get("L3_HOME").reverse());
 
+    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.16, 1.24, 0, 0);
+    mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
+    end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
+    var place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.16, 1.24 + kAuto.placeDrop, 0, 0);
+    trajectories.put("L3_L3PLACED", linearTrajectory(start, place));
+    trajectories.put(
+        "L3PLACED_HOME", complexProfile(place, mid).concatenate(complexProfile(mid, end)));
+
     trajectories.put("L2_HOME", simpleProfile(.9, .9, .18, .16));
     trajectories.put("HOME_L2", trajectories.get("L2_HOME").reverse());
+
+    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9, 0, 0);
+    place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9 + kAuto.placeDrop, 0, 0);
+    trajectories.put("L2_L2PLACED", linearTrajectory(start, place));
+    trajectories.put("L2PLACED_HOME", simpleProfile(.9, .9 + kAuto.placeDrop, .18, .16));
 
     trajectories.put("HOME_DOUBLESUB", simpleProfile(.18, 0.16, 0.65, 0.89));
     trajectories.put("DOUBLESUB_HOME", trajectories.get("HOME_DOUBLESUB").reverse());
@@ -63,6 +77,10 @@ public class ArmDefaultTrajectories {
 
   public ArmTrajectory complexProfile(Matrix<N4, N1> start, Matrix<N4, N1> end) {
     return new ArmTrajectory(start, end);
+  }
+
+  public ArmTrajectory linearTrajectory(Matrix<N4, N1> start, Matrix<N4, N1> end) {
+    return ArmTrajectory.linearArmTrajectory(start.block(2, 1, 0, 0), end.block(2, 1, 0, 0));
   }
 
   public ArmTrajectory getTrajectory(Pair<armState, armState> trajPair) {

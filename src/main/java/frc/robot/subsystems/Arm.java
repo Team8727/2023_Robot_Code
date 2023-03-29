@@ -111,6 +111,17 @@ public class Arm extends SubsystemBase {
   private MechanismLigament2d gripper2d =
       forearm2d.append(new MechanismLigament2d("Gripper", .25, -30, 5, new Color8Bit(0, 255, 0)));
 
+  private MechanismRoot2d baseSet2d = arm2d.getRoot("Setpoint", 1, 0.2413);
+  private MechanismLigament2d proximalSet2d =
+      baseSet2d.append(
+          new MechanismLigament2d("Proximal", Proximal.length, 60, 5, new Color8Bit(255, 0, 255)));
+  private MechanismLigament2d forearmSet2d =
+      proximalSet2d.append(
+          new MechanismLigament2d("Forearm", Forearm.length, -30, 5, new Color8Bit(255, 0, 255)));
+  private MechanismLigament2d gripperSet2d =
+      forearmSet2d.append(
+          new MechanismLigament2d("Gripper", .25, -30, 5, new Color8Bit(255, 255, 0)));
+
   // Logging
   private DataLog log = DataLogManager.getLog();
   private DoubleArrayLogEntry logActualVoltages =
@@ -158,15 +169,23 @@ public class Arm extends SubsystemBase {
 
   public Command presetTrajectory(Pair<armState, armState> trajPair) {
     return new ArmTrajectoryCommand(trajectoryMap.getTrajectory(trajPair), this)
+        .andThen(() -> state = trajPair.getSecond())
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command simpleMove(double xDelta, double yDelta) {
-    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta), this);
+    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta), this)
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command gotoState(armState targetState) {
-    return new DeferredCommand(() -> gotoStateGenerate(targetState), this);
+    return new DeferredCommand(() -> gotoStateGenerate(targetState), this)
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
+  }
+
+  public Command place() {
+    return new DeferredCommand(this::placeGenerate, this)
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   // -------------------- Turret movement commands --------------------
@@ -191,8 +210,16 @@ public class Arm extends SubsystemBase {
 
   // -------------------- Private command suppliers --------------------
 
+  private Command placeGenerate() {
+    if (state == armState.L3) {
+      System.out.println("Fucking clown \n\n Fucking Clown");
+      return presetTrajectory(new Pair<armState, armState>(armState.L3, armState.L3PLACED));
+    } else if (state == armState.L2) {
+      return presetTrajectory(new Pair<armState, armState>(armState.L2, armState.L2PLACED));
+    } else return new WaitCommand(0);
+  }
+
   private Command gotoStateGenerate(armState targetState) {
-    System.out.println(targetState.name());
     // Do nothing if already at state
     if (targetState == state) return new WaitCommand(0);
     ArmTrajectory trajectory = new ArmTrajectory();
@@ -205,6 +232,11 @@ public class Arm extends SubsystemBase {
               trajectoryMap.getTrajectory(
                   new Pair<armState, armState>(armState.INIT, armState.HOME)));
       trajState = armState.HOME;
+    }
+
+    // Don't allow illegal trajectories
+    if (state == armState.L3PLACED || state == armState.L2PLACED) {
+      targetState = armState.HOME;
     }
 
     // Go through neutral or go to/from home
@@ -223,18 +255,17 @@ public class Arm extends SubsystemBase {
               trajectoryMap.getTrajectory(new Pair<armState, armState>(trajState, targetState)));
     }
 
+    var endState = targetState;
     // Return a trajectory command
     return new ArmTrajectoryCommand(trajectory, this)
-        .andThen(() -> state = targetState)
+        .andThen(() -> state = endState)
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command simpleMoveGenerator(double xDelta, double yDelta) {
-    return simpleTrajectory(
-        getXY().get(0, 0),
-        getXY().get(1, 0),
-        getXY().get(0, 0) + xDelta,
-        getXY().get(1, 0) + yDelta);
+    var delta = new MatBuilder<N2, N1>(Nat.N2(), Nat.N1()).fill(xDelta, yDelta);
+    var trajectory = ArmTrajectory.linearArmTrajectory(getXY(), getXY().plus(delta));
+    return new ArmTrajectoryCommand(trajectory, this);
   }
 
   // -------------------- Kinematics helpers --------------------
@@ -288,7 +319,7 @@ public class Arm extends SubsystemBase {
     if (Math.sqrt(Math.pow(xy.get(0, 0), 2) + Math.pow(xy.get(1, 0), 2))
         > Forearm.length + Proximal.length) return false;
     if (xy.get(1, 0) < -.11) return false;
-    if (xy.get(0, 0) > 0) return false;
+    if (xy.get(0, 0) < 0) return false;
     return true;
   }
 
@@ -326,9 +357,6 @@ public class Arm extends SubsystemBase {
 
   @Override
   public void periodic() {
-    if (this.getCurrentCommand() != null) System.out.println(getCurrentCommand().getName());
-    // Check for encoder init
-
     // Calculate voltages
     var state = getArmMeasuredStates();
     var armVoltages = armController.calculate(state, armSetpoint);
@@ -354,6 +382,10 @@ public class Arm extends SubsystemBase {
     gripper2d.setAngle(
         Units.radiansToDegrees(
             -(getArmMeasuredStates().get(0, 0) + getArmMeasuredStates().get(1, 0))));
+
+    proximalSet2d.setAngle(Units.radiansToDegrees(armSetpoint.get(0, 0)));
+    forearmSet2d.setAngle(Units.radiansToDegrees(armSetpoint.get(1, 0)));
+    gripperSet2d.setAngle(Units.radiansToDegrees(-(armSetpoint.get(0, 0) + armSetpoint.get(1, 0))));
   }
 
   @Override
@@ -488,7 +520,7 @@ public class Arm extends SubsystemBase {
     SBState =
         SBTab.getLayout("State", BuiltInLayouts.kGrid)
             .withProperties(Map.of("Number of columns", 2))
-            .withSize(5, 4)
+            .withSize(5, 5)
             .withPosition(7, 0);
 
     SBMotors.addDouble("Shoulder Output", () -> getArmVoltages().get(0, 0));
@@ -507,6 +539,7 @@ public class Arm extends SubsystemBase {
     SBSensors.add("Forearm Absolute", absForearmEncoder).withPosition(1, 1);
     SBSensors.add("Turret Absolute", absTurretEncoder).withPosition(1, 2);
 
+    SBState.addString("State", () -> this.state.name());
     SBState.addDouble("Proximal", () -> getArmMeasuredStates().get(0, 0)).withPosition(0, 0);
     SBState.addDouble("Forearm", () -> getArmMeasuredStates().get(1, 0)).withPosition(0, 1);
     SBState.addDouble("Turret", () -> turretEncoder.getDistance() + turretOffset)
