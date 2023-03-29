@@ -48,7 +48,7 @@ public class AutoRoutines {
   // Auto paths go here
   private void loadRoutines() {
     routineMap.put("No Auto", gripper.intakeCommand());
-    routineMap.put("Testing", drivetrain.followPath(paths.get("subCubeMobility")));
+    routineMap.put("Testing", drivetrain.generatePath(paths.get("subCubeMobility")));
     routineMap.put(
         "Place Only",
         new SequentialCommandGroup(
@@ -81,7 +81,7 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subConeMobility"))));
+            drivetrain.generatePath(paths.get("subConeMobility"))));
     routineMap.put(
         "subCubeMobility",
         new SequentialCommandGroup(
@@ -90,24 +90,24 @@ public class AutoRoutines {
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.mobilityAuto()));
-    /*routineMap.put(
-    "subConeMobilityandBalance",
-    new SequentialCommandGroup(
-        gripper.intakeCommand(),
-        arm.gotoState(armState.L3),
-        armGripperCommands.placeCommand(),
-        arm.gotoState(armState.HOME),
-        drivetrain.followPath(paths.get("subConeMobilityandBalance")),
-        drivetrain.AutoBalanceCommand()));*/
-    /*routineMap.put(
-    "subCubeMobilityandBalance",
-    new SequentialCommandGroup(
-        gripper.intakeCommand(),
-        arm.gotoState(armState.L3),
-        armGripperCommands.placeCommand(),
-        arm.gotoState(armState.HOME),
-        drivetrain.followPath(paths.get("subCubeMobilityandBalance")),
-        drivetrain.AutoBalanceCommand()));*/
+    routineMap.put(
+        "subConeMobilityandBalance",
+        new SequentialCommandGroup(
+            gripper.intakeCommand(),
+            arm.gotoState(armState.L3),
+            armGripperCommands.placeCommand(),
+            arm.gotoState(armState.HOME),
+            drivetrain.generatePath(paths.get("subConeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
+    routineMap.put(
+        "subCubeMobilityandBalance",
+        new SequentialCommandGroup(
+            gripper.intakeCommand(),
+            arm.gotoState(armState.L3),
+            armGripperCommands.placeCommand(),
+            arm.gotoState(armState.HOME),
+            drivetrain.generatePath(paths.get("subCubeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
 
     // far routines -----------------------------------------------------
     routineMap.put(
@@ -126,14 +126,14 @@ public class AutoRoutines {
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
             drivetrain.mobilityAuto()));
-    /*routineMap.put(
+    routineMap.put(
         "farConeMobilityandBalance",
         new SequentialCommandGroup(
             gripper.intakeCommand(),
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("farConeMobilityandBalance")),
+            drivetrain.generatePath(paths.get("farConeMobilityandBalance")),
             drivetrain.AutoBalanceCommand()));
     routineMap.put(
         "farCubeMobilityandBalance",
@@ -142,10 +142,9 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("farCubeMobilityandBalance")),
-            drivetrain.AutoBalanceCommand()));*/
+            drivetrain.generatePath(paths.get("farCubeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
 
-    /*
     // mid routines -----------------------------------------------------
     routineMap.put(
         "midConeandBalance",
@@ -154,7 +153,7 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("midConeandBalance")),
+            drivetrain.generatePath(paths.get("midConeandBalance")),
             drivetrain.AutoBalanceCommand()));
     routineMap.put(
         "midCubeandBalance",
@@ -163,61 +162,76 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("midCubeandBalance")),
-            drivetrain.AutoBalanceCommand()));*/
+            drivetrain.generatePath(paths.get("midCubeandBalance")),
+            drivetrain.AutoBalanceCommand()));
   }
 
   private void loadPaths() {
+    // Mobility only
     paths.put(
         "farConeMobility",
         PathPlanner.loadPath(
             "farConeMobility",
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
-            false));
-    paths.put(
-        "farConeMobilityandBalance",
-        PathPlanner.loadPath(
-            "farConeMobilityandBalance",
-            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            true));
     paths.put(
         "farCubeMobility",
         PathPlanner.loadPath(
             "farCubeMobility",
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
-            false));
-    paths.put(
-        "farCubeMobilityandBalance",
-        PathPlanner.loadPath(
-            "farCubeMobilityandBalance",
-            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
-    paths.put(
-        "midConeandBalance",
-        PathPlanner.loadPath(
-            "midConeandBalance", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
-    paths.put(
-        "midCubeandBalance",
-        PathPlanner.loadPath(
-            "midCubeandBalance", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            true));
     paths.put(
         "subConeMobility",
         PathPlanner.loadPath(
-            "subConeMobility", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
-    paths.put(
-        "subConeMobilityandBalance",
-        PathPlanner.loadPath(
-            "subConeMobilityandBalance",
-            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            "subConeMobility",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
     paths.put(
         "subCubeMobility",
         PathPlanner.loadPath(
             "subCubeMobility",
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
             true));
+
+    // Mobility + Balance
+    paths.put(
+        "farConeMobilityandBalance",
+        PathPlanner.loadPath(
+            "farConeMobilityandBalance",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
+    paths.put(
+        "farCubeMobilityandBalance",
+        PathPlanner.loadPath(
+            "farCubeMobilityandBalance",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
+    paths.put(
+        "subConeMobilityandBalance",
+        PathPlanner.loadPath(
+            "subConeMobilityandBalance",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
     paths.put(
         "subCubeMobilityandBalance",
         PathPlanner.loadPath(
             "subCubeMobilityandBalance",
-            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint)));
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
+
+    // Mid Paths
+    paths.put(
+        "midConeandBalance",
+        PathPlanner.loadPath(
+            "midConeandBalance",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
+    paths.put(
+        "midCubeandBalance",
+        PathPlanner.loadPath(
+            "midCubeandBalance",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
   }
 
   // Iterate over hashmap and add routines to sendable
