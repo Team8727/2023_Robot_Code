@@ -35,6 +35,11 @@ public class ArmTrajectory {
   }
 
   public ArmTrajectory(Matrix<N4, N1> startState, Matrix<N4, N1> endState) {
+    if (!Arm.validPosition(startState.block(2, 1, 0, 0))
+        || !Arm.validPosition(endState.block(2, 1, 0, 0))) {
+      throw new IllegalArgumentException("Start or End is out of bounds!");
+    }
+
     // Inverse Kinematics to get the Thetas
     Matrix<N2, N1> initialThetas =
         Arm.inverseKinematics(startState.block(2, 1, 0, 0)); // Shoulder, then Elbow
@@ -73,7 +78,7 @@ public class ArmTrajectory {
   }
 
   public static ArmTrajectory linearArmTrajectory(Matrix<N2, N1> start, Matrix<N2, N1> end) {
-    if (!Arm.validPosition(end) || !Arm.validPosition(end)) {
+    if (!Arm.validPosition(start) || !Arm.validPosition(end)) {
       throw new IllegalArgumentException("Start or End is out of bounds!");
     }
 

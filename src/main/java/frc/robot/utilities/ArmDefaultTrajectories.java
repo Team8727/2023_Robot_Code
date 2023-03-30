@@ -26,16 +26,16 @@ public class ArmDefaultTrajectories {
 
     trajectories.put("GROUND_HOME", trajectories.get("HOME_GROUND").reverse());
 
-    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.16, 1.24, 0, 0);
+    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
     mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
     end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
     trajectories.put("L3_HOME", complexProfile(start, mid).concatenate(complexProfile(mid, end)));
     trajectories.put("HOME_L3", trajectories.get("L3_HOME").reverse());
 
-    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.16, 1.24, 0, 0);
+    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
     mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
     end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
-    var place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.16, 1.24 + kAuto.placeDrop, 0, 0);
+    var place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22 + kAuto.placeDrop, 0, 0);
     trajectories.put("L3_L3PLACED", linearTrajectory(start, place));
     trajectories.put(
         "L3PLACED_HOME", complexProfile(place, mid).concatenate(complexProfile(mid, end)));
@@ -56,7 +56,7 @@ public class ArmDefaultTrajectories {
     trajectories.put("HOME_NEUTRAL", simpleProfile(.17, .16, .49, .49));
     trajectories.put("NEUTRAL_HOME", simpleProfile(.49, 0.49, 0.18, 0.16));
 
-    trajectories.put("L3_NEUTRAL", simpleProfile(1.16, 1.24, .49, .49));
+    trajectories.put("L3_NEUTRAL", simpleProfile(1.2, 1.22, .49, .49));
     trajectories.put("NEUTRAL_L3", trajectories.get("L3_NEUTRAL").reverse());
 
     trajectories.put("NEUTRAL_L2", simpleProfile(.49, .49, .9, .9));
