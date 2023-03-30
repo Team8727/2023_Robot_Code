@@ -548,5 +548,7 @@ public class Arm extends SubsystemBase {
         .withPosition(1, 0);
     SBState.addDouble("Y", () -> kinematics2D(getArmMeasuredStates().block(2, 1, 0, 0)).get(1, 0))
         .withPosition(1, 1);
+
+    SBTab.add("PID", TurretPID);
   }
 }

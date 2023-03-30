@@ -86,7 +86,7 @@ public class RobotContainer {
 
     armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommand());
 
-    armJoystick.pov(0).whileTrue(new TurretManual(() -> -0.5 * armJoystick.getTwist(), arm));
+    armJoystick.pov(0).whileTrue(new TurretManual(() -> -armJoystick.getTwist(), arm));
     armJoystick.pov(180).onTrue(arm.turretHome());
   }
 
