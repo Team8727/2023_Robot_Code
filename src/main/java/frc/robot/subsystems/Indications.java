@@ -89,9 +89,9 @@ public class Indications extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    monotone(proximalRightStrip, Color.kAliceBlue);
-    monotone(proximalLeftStrip, Color.kDarkRed);
-    runway(forearmStrip, Color.kPurple, 5);
+    monotone(proximalRightStrip, Color.kGreen);
+    monotone(proximalLeftStrip, Color.kGreen);
+    monotone(forearmStrip, Color.kGreen);
     armLEDs.setData(armLEDsBuffer);
   }
 
