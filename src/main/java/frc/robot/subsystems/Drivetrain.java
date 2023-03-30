@@ -60,6 +60,7 @@ import frc.robot.Constants.kDrivetrain.*;
 import frc.robot.Constants.kDrivetrain.Feedforward.Linear;
 import frc.robot.Constants.kDrivetrain.PID;
 import frc.robot.Constants.kVision;
+import frc.robot.utilities.DeferredCommand;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -212,19 +213,7 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public Command followPath(PathPlannerTrajectory path) {
-    return this.runOnce(() -> setPose(path.getInitialPose()))
-        .andThen(
-            new PPRamseteCommand(
-                path,
-                this::getPose,
-                ramseteController,
-                simpleFeedForward,
-                driveKinematics,
-                this::getSpeeds,
-                leftPIDcontroller,
-                rightPIDcontroller,
-                driveVoltagesBiConsumer,
-                this));
+    return new DeferredCommand(() -> this.generatePath(path), this);
   }
 
   public Command generatePath(PathPlannerTrajectory path) {
