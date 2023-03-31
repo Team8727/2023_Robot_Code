@@ -138,10 +138,10 @@ public class AutoRoutines {
     routineMap.put(
         "farCubeMobilityandBalance",
         new SequentialCommandGroup(
-            gripper.intakeCommand(),
-            arm.gotoState(armState.L3),
-            armGripperCommands.placeCommand(),
-            arm.gotoState(armState.HOME),
+            // gripper.intakeCommand(),
+            // arm.gotoState(armState.L3),
+            // armGripperCommands.placeCommand(),
+            // arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("farCubeMobilityandBalance"))));
     // drivetrain.AutoBalanceCommand()));
 
@@ -164,6 +164,14 @@ public class AutoRoutines {
             arm.gotoState(armState.HOME),
             drivetrain.followPath(paths.get("midCubeandBalance"))));
     // drivetrain.AutoBalanceCommand()));
+    routineMap.put(
+        "subConePick",
+        new SequentialCommandGroup(
+            // gripper.intakeCommand(),
+            // arm.gotoState(armState.L3),
+            // armGripperCommands.placeCommand(),
+            // arm.gotoState(armState.HOME),
+            drivetrain.followPath(paths.get("subConePick"))));
   }
 
   private void loadPaths() {
@@ -232,6 +240,10 @@ public class AutoRoutines {
             "midCubeandBalance",
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
             true));
+    paths.put(
+        "subConePick",
+        PathPlanner.loadPath(
+            "subConePick", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint), true));
   }
 
   // Iterate over hashmap and add routines to sendable
