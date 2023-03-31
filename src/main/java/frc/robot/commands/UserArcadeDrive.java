@@ -24,8 +24,6 @@ public class UserArcadeDrive extends CommandBase {
   private final DoubleSupplier linearInput;
   private final DoubleSupplier angularInput;
   private final BooleanSupplier boostInput;
-  private final BooleanSupplier precisionInput;
-
   /**
    * Linear supplier and angular supplier are -1 to 1 double inputs that can be passed as method
    * references or lambda in the ctors Same but boolean for boost Drivetrain subsystem instance is
@@ -35,14 +33,12 @@ public class UserArcadeDrive extends CommandBase {
       DoubleSupplier linearSupplier,
       DoubleSupplier angularSupplier,
       BooleanSupplier boostSupplier,
-      BooleanSupplier precisionSupplier,
       Drivetrain drivetrain) {
     this.drivetrain = drivetrain;
     slewRateLimiter = new SlewRateLimiter(Rate.driverAccel);
     linearInput = linearSupplier;
     angularInput = angularSupplier;
     boostInput = boostSupplier;
-    precisionInput = precisionSupplier;
     states = Indications.getCurrentStateTopic().publish();
 
     // Use addRequirements() here to declare subsystem dependencies.
@@ -67,11 +63,8 @@ public class UserArcadeDrive extends CommandBase {
     // range, or the driver range
     var speed = Rate.driverSpeed;
     var rotation = Rate.driverAngularSpeed;
-    if (precisionInput.getAsBoolean()) {
-      speed = Rate.precisionSpeed;
-    } else if (boostInput.getAsBoolean()) {
+    if (boostInput.getAsBoolean()) {
       speed = Rate.maxSpeed;
-      rotation /= 4.0;
       states.set(RobotStates.BOOSTMODE.name());
     }
     double linearSpeed = xSpeed * speed;

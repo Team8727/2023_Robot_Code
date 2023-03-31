@@ -57,12 +57,15 @@ import frc.robot.Constants.kDrivetrain.*;
 import frc.robot.Constants.kDrivetrain.Feedforward.Linear;
 import frc.robot.Constants.kDrivetrain.PID;
 import frc.robot.Constants.kVision;
+import frc.robot.commands.UserArcadeDrive;
 import frc.robot.utilities.DeferredCommand;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
@@ -188,6 +191,13 @@ public class Drivetrain extends SubsystemBase {
 
   // -------------------- Drivetrain commands --------------------
 
+  public Command TeleopDriveCommand(
+      DoubleSupplier linearSupplier,
+      DoubleSupplier angularSupplier,
+      BooleanSupplier boostSupplier) {
+    return new UserArcadeDrive(linearSupplier, angularSupplier, boostSupplier, this);
+  }
+
   public Command AutoBalanceCommand() {
     return this.run(
             () ->
@@ -289,15 +299,16 @@ public class Drivetrain extends SubsystemBase {
     if (Math.abs(input) < DeadZones.teleopDriveDeadZone) return 0;
     return Math.copySign(input * input, input);
   }
-  // Enable or disable brake mode on the motors
-  public void brakeMode(boolean mode) {
-    IdleMode nMode = IdleMode.kCoast;
-    if (mode) nMode = IdleMode.kBrake;
 
-    leftLead.setIdleMode(nMode);
-    leftFollow.setIdleMode(nMode);
-    rightLead.setIdleMode(nMode);
-    rightFollow.setIdleMode(nMode);
+  private DifferentialDriveWheelSpeeds desaturateWheelSpeeds(DifferentialDriveWheelSpeeds speeds) {
+    if (Math.max(speeds.leftMetersPerSecond, speeds.rightMetersPerSecond) > Rate.maxSpeed) {
+      var overspeed =
+          Math.max(speeds.leftMetersPerSecond, speeds.rightMetersPerSecond) - Rate.maxSpeed;
+      speeds.leftMetersPerSecond -= overspeed;
+      speeds.rightMetersPerSecond -= overspeed;
+    }
+
+    return speeds;
   }
 
   // -------------------- Public interface methods --------------------
@@ -310,6 +321,17 @@ public class Drivetrain extends SubsystemBase {
 
     driveChassisSpeeds(
         new ChassisSpeeds(Rate.maxSpeed * linearPercent, 0, Rate.maxAngularSpeed * angularPercent));
+  }
+
+  // Enable or disable brake mode on the motors
+  public void brakeMode(boolean mode) {
+    IdleMode nMode = IdleMode.kCoast;
+    if (mode) nMode = IdleMode.kBrake;
+
+    leftLead.setIdleMode(nMode);
+    leftFollow.setIdleMode(nMode);
+    rightLead.setIdleMode(nMode);
+    rightFollow.setIdleMode(nMode);
   }
 
   // Simple tank drive that uses a percentage (-1.00 to 1.00) of the max left and right speeds to
@@ -327,6 +349,7 @@ public class Drivetrain extends SubsystemBase {
   public void driveWheelSpeeds(DifferentialDriveWheelSpeeds wheelSpeeds) {
     // Feedforward calculated with current velocity and next velcocity with timestep of 20ms
     // (default robot loop period)
+    wheelSpeeds = desaturateWheelSpeeds(wheelSpeeds);
     var nextChassisSpeeds = driveKinematics.toChassisSpeeds(wheelSpeeds);
     var limitedWheelSpeeds =
         driveKinematics.toWheelSpeeds(
