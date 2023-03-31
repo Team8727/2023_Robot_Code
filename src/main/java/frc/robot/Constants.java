@@ -210,7 +210,7 @@ public final class Constants {
 
     public static final class Rate {
       // Speeds in m/s rotations in rad/s
-      public static final double maxSpeed = 4.7;
+      public static final double maxSpeed = 4.75;
       public static final double maxAccel = 8.25;
       public static final double maxAngularSpeed = 5;
       public static final double maxAngularAccel = 8;

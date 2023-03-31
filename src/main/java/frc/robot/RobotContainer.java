@@ -16,7 +16,6 @@ import frc.robot.Constants.armState;
 import frc.robot.commands.ArmGripperCommands;
 import frc.robot.commands.AutoRoutines;
 import frc.robot.commands.TurretManual;
-import frc.robot.commands.UserArcadeDrive;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Gripper;
@@ -52,12 +51,10 @@ public class RobotContainer {
     indications.intakeStatePublish(armJoystick.getThrottle() < 0.5);
     arm.encoderStartCommand().schedule();
     drivetrain.setDefaultCommand(
-        new UserArcadeDrive(
+        drivetrain.TeleopDriveCommand(
             () -> -driverController.getLeftY(),
             () -> -driverController.getRightX(),
-            () -> driverController.getLeftTriggerAxis() > 0.1,
-            () -> driverController.getRightTriggerAxis() > 0.1,
-            drivetrain));
+            () -> driverController.getRightTriggerAxis() > 0.1));
 
     // Post sendable chooser for auto
     Shuffleboard.getTab("Auto").add("Auto selector", autoRoutines.getChooser()).withSize(3, 1);
