@@ -6,14 +6,42 @@ import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N4;
+import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.Constants.armState;
 import frc.robot.Constants.kAuto;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 public class ArmDefaultTrajectories {
   public HashMap<String, ArmTrajectory> trajectories = new HashMap<>();
 
   public ArmDefaultTrajectories() {
+    try {
+      JSONParser parser = new JSONParser();
+      JSONArray jsonArray =
+          (JSONArray)
+              parser.parse(
+                  new FileReader(
+                      new File(Filesystem.getDeployDirectory(), "arm_trajectories.json")));
+      for (Object item : jsonArray) {
+        JSONObject trajectory = (JSONObject) item;
+
+        String name = (String) trajectory.get("name");
+
+        System.out.println(name);
+        JSONArray states = (JSONArray) trajectory.get("states");
+
+        trajectories.put(name, new ArmTrajectory(toStateList(states)));
+      }
+    } catch (Exception e) {
+      System.out.println("Fuck\nFuck\nFuck\nFuck");
+      System.out.println(e);
+    }
 
     trajectories.put("INIT_HOME", simpleProfile(.07, 0.08, 0.18, 0.16));
     trajectories.put("HOME_INIT", trajectories.get("INIT_HOME").reverse());
@@ -30,7 +58,6 @@ public class ArmDefaultTrajectories {
     mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
     end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
     trajectories.put("L3_HOME", complexProfile(start, mid).concatenate(complexProfile(mid, end)));
-    trajectories.put("HOME_L3", trajectories.get("L3_HOME").reverse());
 
     start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
     mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
@@ -67,6 +94,26 @@ public class ArmDefaultTrajectories {
 
     trajectories.put("NEUTRAL_DOUBLESUB", simpleProfile(.49, .49, .65, 0.89));
     trajectories.put("DOUBLESUB_NEUTRAL", simpleProfile(.89, .9, .49, .49));
+  }
+
+  private List<ArmTrajectory.State> toStateList(JSONArray statesArray) {
+    List<ArmTrajectory.State> states = new ArrayList<ArmTrajectory.State>();
+    for (Object item : statesArray) {
+      JSONObject jsonState = (JSONObject) item;
+      JSONArray jsonStateVector = (JSONArray) jsonState.get("state");
+      Matrix<N4, N1> stateVector =
+          new MatBuilder<N4, N1>(Nat.N4(), Nat.N1())
+              .fill(
+                  (double) jsonStateVector.get(0),
+                  (double) jsonStateVector.get(1),
+                  (double) jsonStateVector.get(2),
+                  (double) jsonStateVector.get(3));
+
+      var state = new ArmTrajectory.State((double) jsonState.get("time"), stateVector);
+      states.add(state);
+    }
+
+    return states;
   }
 
   public ArmTrajectory simpleProfile(double startx, double starty, double endx, double endy) {
