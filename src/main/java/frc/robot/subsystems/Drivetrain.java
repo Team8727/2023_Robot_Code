@@ -5,9 +5,9 @@
 package frc.robot.subsystems;
 
 import com.kauailabs.navx.frc.AHRS;
-import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
+import com.pathplanner.lib.commands.FollowPathWithEvents;
 import com.pathplanner.lib.commands.PPRamseteCommand;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
@@ -59,6 +59,7 @@ import frc.robot.Constants.kDrivetrain.PID;
 import frc.robot.Constants.kVision;
 import frc.robot.utilities.DeferredCommand;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -66,8 +67,6 @@ import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
-import com.pathplanner.lib.commands.FollowPathWithEvents;
-import java.util.HashMap;
 
 public class Drivetrain extends SubsystemBase {
   // Initalize motor controllers
@@ -203,7 +202,8 @@ public class Drivetrain extends SubsystemBase {
                 .withTimeout(kAuto.creepTimeout));
   }
 
-  public FollowPathWithEvents followPathwithEvents(PathPlannerTrajectory path, HashMap<String, Command> eventMap){
+  public FollowPathWithEvents followPathwithEvents(
+      PathPlannerTrajectory path, HashMap<String, Command> eventMap) {
     return new FollowPathWithEvents(this.followPath(path), path.getMarkers(), eventMap);
   }
 
