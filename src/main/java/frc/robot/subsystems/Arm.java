@@ -239,9 +239,6 @@ public class Arm extends SubsystemBase {
 
     var endState = targetState;
 
-    System.out.println(targetState);
-    System.out.println(trajectory);
-
     // Return a trajectory command
     return new ArmTrajectoryCommand(trajectory, this)
         .andThen(() -> state = endState)
