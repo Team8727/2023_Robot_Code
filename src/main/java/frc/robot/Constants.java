@@ -49,7 +49,7 @@ public final class Constants {
     public static final double tipTimeout = 1.75;
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
-    public static final double placeDrop = -.12;
+    public static final double placeDrop = -.18;
     public static final double velConstraint = 1;
     public static final double accConstraint = 0.5;
   }
@@ -70,11 +70,19 @@ public final class Constants {
 
   public static final class kArm {
     public static final class Constraints {
-      public static final double proximalVelocity = 1.8;
-      public static final double proximalAcceleration = 0.65;
-      public static final double forearmVelocity = 2.4;
-      public static final double forearmAcceleration = 0.75;
-      public static final double turretAcceleration = 0.5;
+      public static final class Proximal {
+        public static final double velocity = 1.8;
+        public static final double acceleration = 0.7;
+      }
+
+      public static final class Forearm {
+        public static final double velocity = 2.4;
+        public static final double acceleration = 0.85;
+      }
+
+      public static final double turretAcceleration = 0.8;
+      public static final double linearVelocity = .8;
+      public static final double linearAcceleration = 1;
     }
 
     public static final class Motors {
@@ -88,8 +96,8 @@ public final class Constants {
       public static final long startUpTime = 800;
 
       public static final class Proximal {
-        public static final double initial = Math.PI / 2 + Units.degreesToRadians(16);
-        public static final double offset = -1.515485;
+        public static final double initial = Math.PI / 2 + Units.degreesToRadians(17);
+        public static final double offset = -1.505021;
         public static final double gear_ratio = 50.0 / 18.0 * 12.0 / 44.0;
         public static final int absPort = 9;
         public static final int APort = 7;
@@ -97,8 +105,8 @@ public final class Constants {
       }
 
       public static final class Forearm {
-        public static final double initial = Units.degreesToRadians(-173);
-        public static final double offset = 3.303940;
+        public static final double initial = Units.degreesToRadians(-174);
+        public static final double offset = 3.659801;
         public static final double gear_ratio = 15.0 / 44.0;
         public static final int absPort = 12;
         public static final int APort = 10;
@@ -107,8 +115,8 @@ public final class Constants {
 
       public static final class Turret {
         public static final double initial = 0;
-        public static final double offset = .068;
-        public static final double gear_ratio = -15.0 / 160.0;
+        public static final double offset = -0.566247025457923;
+        public static final double gear_ratio = -16.0 / 160.0;
         public static final int absPort = 6;
         public static final int APort = 4;
         public static final int BPort = 5;
@@ -142,9 +150,9 @@ public final class Constants {
     }
 
     public static final class Turret {
-      public static final double ks = 0;
-      public static final double kv = 0;
-      public static final double ka = 0;
+      public static final double ks = 0.62876;
+      public static final double kv = 2.0407;
+      public static final double ka = 1.9866;
       public static final double kp = 9;
       public static final double ki = 0;
       public static final double kd = 0;
@@ -266,6 +274,8 @@ public final class Constants {
     GROUND,
     DOUBLESUB,
     L2,
-    L3
+    L3,
+    L2PLACED,
+    L3PLACED
   }
 }

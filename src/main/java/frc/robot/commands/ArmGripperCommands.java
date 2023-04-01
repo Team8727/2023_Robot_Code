@@ -1,11 +1,10 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants.GamePiece;
 import frc.robot.Constants.armState;
-import frc.robot.Constants.kAuto;
 import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Gripper;
 import java.util.function.BooleanSupplier;
@@ -21,22 +20,16 @@ public class ArmGripperCommands {
   }
 
   public Command placeCommand() {
-    return arm.simpleMove(.03, kAuto.placeDrop)
-        .unless(() -> arm.getArmState() != armState.L3 && arm.getArmState() != armState.L2)
+    return arm.place()
         .andThen(gripper.ejectCommand())
-        .andThen(arm.simpleMove(-.03, -kAuto.placeDrop))
-        .andThen(arm.gotoState(armState.HOME));
+        .andThen(arm.gotoState(armState.HOME))
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command intakeCommand(BooleanSupplier gamePieceSelector) {
     return new ConditionalCommand(
-            gripper.intakeCommand(GamePiece.CONE),
-            gripper.intakeCommand(GamePiece.KUBE),
-            gamePieceSelector)
-        .andThen(
-            new ConditionalCommand(
-                arm.gotoState(armState.HOME),
-                new WaitCommand(0),
-                () -> arm.getArmState() == armState.GROUND));
+        gripper.intakeCommand(GamePiece.CONE),
+        gripper.intakeCommand(GamePiece.KUBE),
+        gamePieceSelector);
   }
 }

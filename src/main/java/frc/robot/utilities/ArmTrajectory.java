@@ -10,10 +10,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import frc.robot.Constants.kArm.Constraints;
+import frc.robot.subsystems.Arm;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,9 +34,32 @@ public class ArmTrajectory {
     totalTime = states.get(states.size() - 1).time;
   }
 
-  public ArmTrajectory(Pair<TrapezoidProfile, TrapezoidProfile> motionProfile) {
-    var shoulderProfile = motionProfile.getFirst();
-    var elbowProfile = motionProfile.getSecond();
+  public ArmTrajectory(Matrix<N4, N1> startState, Matrix<N4, N1> endState) {
+    if (!Arm.validPosition(startState.block(2, 1, 0, 0))
+        || !Arm.validPosition(endState.block(2, 1, 0, 0))) {
+      throw new IllegalArgumentException("Start or End is out of bounds!");
+    }
+
+    // Inverse Kinematics to get the Thetas
+    Matrix<N2, N1> initialThetas =
+        Arm.inverseKinematics(startState.block(2, 1, 0, 0)); // Shoulder, then Elbow
+    Matrix<N2, N1> endThetas = Arm.inverseKinematics(endState.block(2, 1, 0, 0));
+    // Create the Motion Profiles
+    TrapezoidProfile shoulderProfile =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(
+                Constraints.Proximal.velocity, Constraints.Proximal.acceleration), // contraints
+            new TrapezoidProfile.State(endThetas.get(0, 0), endState.get(2, 0)), // endpoint
+            new TrapezoidProfile.State(
+                initialThetas.get(0, 0), startState.get(2, 0))); // startpoint
+    TrapezoidProfile elbowProfile =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(
+                Constraints.Forearm.velocity, Constraints.Forearm.acceleration), // contraints
+            new TrapezoidProfile.State(endThetas.get(1, 0), endState.get(3, 0)), // endpoint
+            new TrapezoidProfile.State(
+                initialThetas.get(1, 0), startState.get(3, 0))); // startpoint
+
     totalTime = Math.max(shoulderProfile.totalTime(), elbowProfile.totalTime());
     states = new ArrayList<State>();
     for (double t = 0; t <= totalTime; t += 20.0 / 1000.0) {
@@ -50,6 +75,41 @@ public class ArmTrajectory {
                       shoulderState.velocity,
                       elbowState.velocity)));
     }
+  }
+
+  public static ArmTrajectory linearArmTrajectory(Matrix<N2, N1> start, Matrix<N2, N1> end) {
+    if (!Arm.validPosition(start) || !Arm.validPosition(end)) {
+      throw new IllegalArgumentException("Start or End is out of bounds!");
+    }
+
+    double distance =
+        Math.sqrt(
+            Math.pow(end.minus(start).get(0, 0), 2) + Math.pow(end.minus(start).get(1, 0), 2));
+
+    var linearPath =
+        new TrapezoidProfile(
+            new TrapezoidProfile.Constraints(
+                Constraints.linearVelocity, Constraints.linearAcceleration),
+            new TrapezoidProfile.State(0, 0),
+            new TrapezoidProfile.State(distance, 0));
+
+    var states = new ArrayList<State>();
+    var prev = start;
+    for (double t = 0; t <= linearPath.totalTime(); t += 20.0 / 1000.0) {
+      var xy = start.plus(end.minus(start).times(t / linearPath.totalTime()));
+      var joints = Arm.inverseKinematics(xy);
+      var prevJoints = Arm.inverseKinematics(prev);
+      var jointSpeeds = joints.minus(prevJoints).div(20.0 / 1000.0);
+      var state = new Matrix<N4, N1>(Nat.N4(), Nat.N1());
+
+      state.assignBlock(0, 0, joints);
+      state.assignBlock(2, 0, jointSpeeds);
+      prev = xy;
+
+      states.add(new State(t, state));
+    }
+
+    return new ArmTrajectory(states);
   }
 
   private static double lerp(double startValue, double endValue, double t) {

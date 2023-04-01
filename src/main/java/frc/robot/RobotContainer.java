@@ -42,6 +42,8 @@ public class RobotContainer {
   private final ArmGripperCommands armGripperCommands = new ArmGripperCommands(arm, gripper);
   private final AutoRoutines autoRoutines =
       new AutoRoutines(drivetrain, arm, gripper, armGripperCommands);
+
+  @SuppressWarnings("unused")
   private final Indications indications = new Indications();
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
@@ -84,7 +86,7 @@ public class RobotContainer {
 
     armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommand());
 
-    armJoystick.pov(0).whileTrue(new TurretManual(() -> -0.5 * armJoystick.getTwist(), arm));
+    armJoystick.pov(0).whileTrue(new TurretManual(() -> -armJoystick.getTwist(), arm));
     armJoystick.pov(180).onTrue(arm.turretHome());
   }
 

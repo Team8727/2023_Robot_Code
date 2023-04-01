@@ -16,7 +16,6 @@ import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.system.NumericalIntegration;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleArrayLogEntry;
@@ -112,6 +111,17 @@ public class Arm extends SubsystemBase {
   private MechanismLigament2d gripper2d =
       forearm2d.append(new MechanismLigament2d("Gripper", .25, -30, 5, new Color8Bit(0, 255, 0)));
 
+  private MechanismRoot2d baseSet2d = arm2d.getRoot("Setpoint", 1, 0.2413);
+  private MechanismLigament2d proximalSet2d =
+      baseSet2d.append(
+          new MechanismLigament2d("Proximal", Proximal.length, 60, 5, new Color8Bit(255, 0, 255)));
+  private MechanismLigament2d forearmSet2d =
+      proximalSet2d.append(
+          new MechanismLigament2d("Forearm", Forearm.length, -30, 5, new Color8Bit(255, 0, 255)));
+  private MechanismLigament2d gripperSet2d =
+      forearmSet2d.append(
+          new MechanismLigament2d("Gripper", .25, -30, 5, new Color8Bit(255, 255, 0)));
+
   // Logging
   private DataLog log = DataLogManager.getLog();
   private DoubleArrayLogEntry logActualVoltages =
@@ -140,7 +150,7 @@ public class Arm extends SubsystemBase {
         new DoubleJointedArmController(
             Feedback.proximal_kP, Feedback.proximal_kD, Feedback.forearm_kP, Feedback.forearm_kD);
     resetArmFF(armSetpoint);
-    trajectoryMap = new ArmDefaultTrajectories(this);
+    trajectoryMap = new ArmDefaultTrajectories();
 
     // Start telemetry
     telemetryInit();
@@ -149,25 +159,32 @@ public class Arm extends SubsystemBase {
   // -------------------- Arm movement commands --------------------
 
   public Command simpleTrajectory(double startx, double starty, double endx, double endy) {
-    var profile =
-        motionProfile(
-            new MatBuilder<N2, N1>(Nat.N2(), Nat.N1()).fill(startx, starty),
-            new MatBuilder<N2, N1>(Nat.N2(), Nat.N1()).fill(endx, endy));
-    return new ArmTrajectoryCommand(new ArmTrajectory(profile), this)
+    return new ArmTrajectoryCommand(
+            new ArmTrajectory(
+                new MatBuilder<N4, N1>(Nat.N4(), Nat.N1()).fill(startx, starty, 0, 0),
+                new MatBuilder<N4, N1>(Nat.N4(), Nat.N1()).fill(endx, endy, 0, 0)),
+            this)
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command presetTrajectory(Pair<armState, armState> trajPair) {
     return new ArmTrajectoryCommand(trajectoryMap.getTrajectory(trajPair), this)
+        .andThen(() -> state = trajPair.getSecond())
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command simpleMove(double xDelta, double yDelta) {
-    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta));
+    return new DeferredCommand(() -> simpleMoveGenerator(xDelta, yDelta), this)
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command gotoState(armState targetState) {
-    return new DeferredCommand(() -> gotoStateGenerate(targetState))
+    return new DeferredCommand(() -> gotoStateGenerate(targetState), this)
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
+  }
+
+  public Command place() {
+    return new DeferredCommand(this::placeGenerate, this)
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
@@ -193,8 +210,16 @@ public class Arm extends SubsystemBase {
 
   // -------------------- Private command suppliers --------------------
 
+  private Command placeGenerate() {
+    if (state == armState.L3) {
+      System.out.println("Fucking clown \n\n Fucking Clown");
+      return presetTrajectory(new Pair<armState, armState>(armState.L3, armState.L3PLACED));
+    } else if (state == armState.L2) {
+      return presetTrajectory(new Pair<armState, armState>(armState.L2, armState.L2PLACED));
+    } else return new WaitCommand(0);
+  }
+
   private Command gotoStateGenerate(armState targetState) {
-    System.out.println(targetState.name());
     // Do nothing if already at state
     if (targetState == state) return new WaitCommand(0);
     ArmTrajectory trajectory = new ArmTrajectory();
@@ -207,6 +232,11 @@ public class Arm extends SubsystemBase {
               trajectoryMap.getTrajectory(
                   new Pair<armState, armState>(armState.INIT, armState.HOME)));
       trajState = armState.HOME;
+    }
+
+    // Don't allow illegal trajectories
+    if (state == armState.L3PLACED || state == armState.L2PLACED) {
+      targetState = armState.HOME;
     }
 
     // Go through neutral or go to/from home
@@ -225,25 +255,24 @@ public class Arm extends SubsystemBase {
               trajectoryMap.getTrajectory(new Pair<armState, armState>(trajState, targetState)));
     }
 
+    var endState = targetState;
     // Return a trajectory command
     return new ArmTrajectoryCommand(trajectory, this)
-        .andThen(() -> state = targetState)
+        .andThen(() -> state = endState)
         .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command simpleMoveGenerator(double xDelta, double yDelta) {
-    return simpleTrajectory(
-        getXY().get(0, 0),
-        getXY().get(1, 0),
-        getXY().get(0, 0) + xDelta,
-        getXY().get(1, 0) + yDelta);
+    var delta = new MatBuilder<N2, N1>(Nat.N2(), Nat.N1()).fill(xDelta, yDelta);
+    var trajectory = ArmTrajectory.linearArmTrajectory(getXY(), getXY().plus(delta));
+    return new ArmTrajectoryCommand(trajectory, this);
   }
 
   // -------------------- Kinematics helpers --------------------
   // Find Ben if you want the math
 
   // 2d kinematics: angles -> xy
-  public Matrix<N2, N1> kinematics2D(Matrix<N2, N1> matrixSE) {
+  public static Matrix<N2, N1> kinematics2D(Matrix<N2, N1> matrixSE) {
     double xG =
         Proximal.length * Math.cos(matrixSE.get(0, 0))
             + Forearm.length * Math.cos(matrixSE.get(0, 0) + matrixSE.get(1, 0));
@@ -254,7 +283,7 @@ public class Arm extends SubsystemBase {
   }
 
   // 3d kinematic: angles -> xyz
-  public Matrix<N3, N1> kinematics3D(Matrix<N3, N1> matrixSETurret) {
+  public static Matrix<N3, N1> kinematics3D(Matrix<N3, N1> matrixSETurret) {
     double xG =
         (Proximal.length * Math.cos(matrixSETurret.get(0, 0))
                 + Forearm.length * Math.cos(matrixSETurret.get(1, 0)))
@@ -270,7 +299,7 @@ public class Arm extends SubsystemBase {
   }
 
   // inverse 2d kinematics: xy -> angles
-  public Matrix<N2, N1> inverseKinematics(Matrix<N2, N1> matrixXY) {
+  public static Matrix<N2, N1> inverseKinematics(Matrix<N2, N1> matrixXY) {
     double r = Math.sqrt(Math.pow(matrixXY.get(0, 0), 2) + Math.pow(matrixXY.get(1, 0), 2));
     double theta_s =
         Math.atan(matrixXY.get(1, 0) / matrixXY.get(0, 0))
@@ -285,52 +314,13 @@ public class Arm extends SubsystemBase {
     return new MatBuilder<>(Nat.N2(), Nat.N1()).fill(theta_s, theta_e - theta_s);
   }
 
-  // -------------------- Trajectory profile generators --------------------
-
-  // Generate joint-space trapozidal motion profiles
-  public Pair<TrapezoidProfile, TrapezoidProfile> motionProfileVelocity(
-      Matrix<N4, N1> startState, Matrix<N4, N1> endState) {
-    // Inverse Kinematics to get the Thetas
-    Matrix<N2, N1> initialThetas =
-        inverseKinematics(startState.block(2, 1, 0, 0)); // Shoulder, then Elbow
-    Matrix<N2, N1> endThetas = inverseKinematics(endState.block(2, 1, 0, 0));
-    // Create the Motion Profiles
-    TrapezoidProfile profileShoulder =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.proximalVelocity, Constraints.proximalAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(0, 0), endState.get(2, 0)), // endpoint
-            new TrapezoidProfile.State(
-                initialThetas.get(0, 0), startState.get(2, 0))); // startpoint
-    TrapezoidProfile profileElbow =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.forearmVelocity, Constraints.forearmAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(1, 0), endState.get(3, 0)), // endpoint
-            new TrapezoidProfile.State(
-                initialThetas.get(1, 0), startState.get(3, 0))); // startpoint
-    return new Pair<>(profileShoulder, profileElbow); // Return as pair
-  }
-
-  public Pair<TrapezoidProfile, TrapezoidProfile> motionProfile(
-      Matrix<N2, N1> startXY, Matrix<N2, N1> endXY) {
-    // Inverse Kinematics to get the Thetas
-    Matrix<N2, N1> initialThetas = inverseKinematics(startXY); // Shoulder, then Elbow
-    Matrix<N2, N1> endThetas = inverseKinematics(endXY);
-    // Create the Motion Profiles
-    TrapezoidProfile profileShoulder =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.proximalVelocity, Constraints.proximalAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(0, 0), 0), // endpoint
-            new TrapezoidProfile.State(initialThetas.get(0, 0), 0)); // startpoint
-    TrapezoidProfile profileElbow =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(
-                Constraints.forearmVelocity, Constraints.forearmAcceleration), // contraints
-            new TrapezoidProfile.State(endThetas.get(1, 0), 0), // endpoint
-            new TrapezoidProfile.State(initialThetas.get(1, 0), 0)); // startpoint
-    return new Pair<>(profileShoulder, profileElbow); // Return as pair
+  // Checks if an xy pair is a valid end effector position
+  public static boolean validPosition(Matrix<N2, N1> xy) {
+    if (Math.sqrt(Math.pow(xy.get(0, 0), 2) + Math.pow(xy.get(1, 0), 2))
+        > Forearm.length + Proximal.length) return false;
+    if (xy.get(1, 0) < -.11) return false;
+    if (xy.get(0, 0) < 0) return false;
+    return true;
   }
 
   // -------------------- Public interface methods --------------------
@@ -367,8 +357,6 @@ public class Arm extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // Check for encoder init
-
     // Calculate voltages
     var state = getArmMeasuredStates();
     var armVoltages = armController.calculate(state, armSetpoint);
@@ -394,6 +382,10 @@ public class Arm extends SubsystemBase {
     gripper2d.setAngle(
         Units.radiansToDegrees(
             -(getArmMeasuredStates().get(0, 0) + getArmMeasuredStates().get(1, 0))));
+
+    proximalSet2d.setAngle(Units.radiansToDegrees(armSetpoint.get(0, 0)));
+    forearmSet2d.setAngle(Units.radiansToDegrees(armSetpoint.get(1, 0)));
+    gripperSet2d.setAngle(Units.radiansToDegrees(-(armSetpoint.get(0, 0) + armSetpoint.get(1, 0))));
   }
 
   @Override
@@ -528,7 +520,7 @@ public class Arm extends SubsystemBase {
     SBState =
         SBTab.getLayout("State", BuiltInLayouts.kGrid)
             .withProperties(Map.of("Number of columns", 2))
-            .withSize(5, 4)
+            .withSize(5, 5)
             .withPosition(7, 0);
 
     SBMotors.addDouble("Shoulder Output", () -> getArmVoltages().get(0, 0));
@@ -547,6 +539,7 @@ public class Arm extends SubsystemBase {
     SBSensors.add("Forearm Absolute", absForearmEncoder).withPosition(1, 1);
     SBSensors.add("Turret Absolute", absTurretEncoder).withPosition(1, 2);
 
+    SBState.addString("State", () -> this.state.name());
     SBState.addDouble("Proximal", () -> getArmMeasuredStates().get(0, 0)).withPosition(0, 0);
     SBState.addDouble("Forearm", () -> getArmMeasuredStates().get(1, 0)).withPosition(0, 1);
     SBState.addDouble("Turret", () -> turretEncoder.getDistance() + turretOffset)
@@ -555,5 +548,7 @@ public class Arm extends SubsystemBase {
         .withPosition(1, 0);
     SBState.addDouble("Y", () -> kinematics2D(getArmMeasuredStates().block(2, 1, 0, 0)).get(1, 0))
         .withPosition(1, 1);
+
+    SBTab.add("PID", TurretPID);
   }
 }

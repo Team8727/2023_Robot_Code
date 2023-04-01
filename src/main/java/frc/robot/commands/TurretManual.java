@@ -38,7 +38,7 @@ public class TurretManual extends CommandBase {
   // Looping body of the command
   @Override
   public void execute() {
-    arm.setTurretSetpoint(slewRateLimiter.calculate(angleInput.getAsDouble()));
+    arm.setTurretSetpoint(arm.getTurretSetpoint() + 0.007 * angleInput.getAsDouble());
   }
 
   @Override
