@@ -13,15 +13,21 @@ import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Gripper;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 public class AutoRoutines {
   private final Drivetrain drivetrain;
   private final Arm arm;
   private final Gripper gripper;
 
-  private final HashMap<String, Command> routineMap = new HashMap<String, Command>();
+  private final LinkedHashMap<String, Command> routineMap = new LinkedHashMap<String, Command>();
   private final SendableChooser<Command> selector = new SendableChooser<Command>();
-  private HashMap<String, PathPlannerTrajectory> paths = new HashMap<>();
+  private LinkedHashMap<String, PathPlannerTrajectory> paths = new LinkedHashMap<>();
+
+  //EventMaps
+  private HashMap<String, Command> eventMapSubCubeTwoPiece = new HashMap<>();
+  private HashMap<String, Command> eventMapFarCubeTwoPiece = new HashMap<>();
+
   private ArmGripperCommands armGripperCommands;
 
   public AutoRoutines(
@@ -48,7 +54,6 @@ public class AutoRoutines {
   // Auto paths go here
   private void loadRoutines() {
     routineMap.put("No Auto", gripper.intakeCommand());
-    routineMap.put("Testing", drivetrain.followPath(paths.get("subCubeMobility")));
     routineMap.put(
         "Place Only",
         new SequentialCommandGroup(
@@ -97,8 +102,8 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subConeMobilityandBalance"))));
-    // drivetrain.AutoBalanceCommand()));
+            drivetrain.followPath(paths.get("subConeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
     routineMap.put(
         "subCubeMobilityandBalance",
         new SequentialCommandGroup(
@@ -106,8 +111,8 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subCubeMobilityandBalance"))));
-    // drivetrain.AutoBalanceCommand()));
+            drivetrain.followPath(paths.get("subCubeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
 
     // far routines -----------------------------------------------------
     routineMap.put(
@@ -133,17 +138,17 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("farConeMobilityandBalance"))));
-    // drivetrain.AutoBalanceCommand()));
+            drivetrain.followPath(paths.get("farConeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
     routineMap.put(
         "farCubeMobilityandBalance",
         new SequentialCommandGroup(
-            // gripper.intakeCommand(),
-            // arm.gotoState(armState.L3),
-            // armGripperCommands.placeCommand(),
-            // arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("farCubeMobilityandBalance"))));
-    // drivetrain.AutoBalanceCommand()));
+            gripper.intakeCommand(),
+            arm.gotoState(armState.L3),
+            armGripperCommands.placeCommand(),
+            arm.gotoState(armState.HOME),
+            drivetrain.followPath(paths.get("farCubeMobilityandBalance")),
+            drivetrain.AutoBalanceCommand()));
 
     // mid routines -----------------------------------------------------
     routineMap.put(
@@ -153,8 +158,8 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("midConeandBalance"))));
-    // drivetrain.AutoBalanceCommand()));
+            drivetrain.followPath(paths.get("midConeandBalance")),
+            drivetrain.AutoBalanceCommand()));
     routineMap.put(
         "midCubeandBalance",
         new SequentialCommandGroup(
@@ -162,16 +167,13 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("midCubeandBalance"))));
-    // drivetrain.AutoBalanceCommand()));
-    routineMap.put(
-        "subConePick",
-        new SequentialCommandGroup(
-            // gripper.intakeCommand(),
-            // arm.gotoState(armState.L3),
-            // armGripperCommands.placeCommand(),
-            // arm.gotoState(armState.HOME),
-            drivetrain.followPath(paths.get("subConePick"))));
+            drivetrain.followPath(paths.get("midCubeandBalance")),
+            drivetrain.AutoBalanceCommand()));
+
+        //Two piece
+        routineMap.put("subCubeTwoPiece", drivetrain.followPathwithEvents(paths.get("subCubeTwoPiece"), eventMapSubCubeTwoPiece));
+        routineMap.put("farCubeTwoPiece", drivetrain.followPathwithEvents(paths.get("farCubeTwoPiece"), eventMapFarCubeTwoPiece));
+
   }
 
   private void loadPaths() {
@@ -240,15 +242,40 @@ public class AutoRoutines {
             "midCubeandBalance",
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
             true));
+
+    //Two piece stuff        
     paths.put(
-        "subConePick",
+        "subCubeTwoPiece",
         PathPlanner.loadPath(
-            "subConePick", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint), true));
+            "subCubeTwoPiece", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint), true));
+    eventMapSubCubeTwoPiece.put("eject1", gripper.ejectCommand());
+    eventMapSubCubeTwoPiece.put("armdown", arm.gotoState(armState.GROUND));
+    eventMapSubCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
+    eventMapSubCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
+    eventMapSubCubeTwoPiece.put("eject2", gripper.ejectCommand());
+
+    paths.put(
+        "farCubeTwoPiece",
+        PathPlanner.loadPath(
+            "farCubeTwoPiece", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint), true));
+    eventMapFarCubeTwoPiece.put("eject1", gripper.ejectCommand());
+    eventMapFarCubeTwoPiece.put("armdown", arm.gotoState(armState.GROUND));
+    eventMapFarCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
+    eventMapFarCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
+    eventMapFarCubeTwoPiece.put("eject2", gripper.ejectCommand());
+
   }
 
   // Iterate over hashmap and add routines to sendable
   private void populateSendable() {
     selector.setDefaultOption("No Auto", routineMap.get("No Auto"));
+    /*Iterator<Entry<String, Command> > newIterator = routineMap.entrySet().iterator();
+    while (newIterator.hasNext()){
+        Map.Entry<String, Command> newMap = (Map.Entry<String, Command>)
+            newIterator.next();
+        System.out.println(newMap.getKey());
+            //selector.addOption(newMap.getKey(), newMap.getValue());
+    }*/
     for (Map.Entry<String, Command> entry : routineMap.entrySet()) {
       selector.addOption(entry.getKey(), entry.getValue());
     }

@@ -5,6 +5,7 @@
 package frc.robot.subsystems;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
 import com.pathplanner.lib.commands.PPRamseteCommand;
@@ -65,6 +66,8 @@ import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
+import com.pathplanner.lib.commands.FollowPathWithEvents;
+import java.util.HashMap;
 
 public class Drivetrain extends SubsystemBase {
   // Initalize motor controllers
@@ -198,6 +201,10 @@ public class Drivetrain extends SubsystemBase {
                     () -> driveVoltages(0, 0))
                 .until(() -> getRoll() > kAuto.chargeStopAngle)
                 .withTimeout(kAuto.creepTimeout));
+  }
+
+  public FollowPathWithEvents followPathwithEvents(PathPlannerTrajectory path, HashMap<String, Command> eventMap){
+    return new FollowPathWithEvents(this.followPath(path), path.getMarkers(), eventMap);
   }
 
   public Command followPath(PathPlannerTrajectory path) {
