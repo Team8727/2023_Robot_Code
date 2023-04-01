@@ -12,8 +12,8 @@ import frc.robot.subsystems.Arm;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Gripper;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class AutoRoutines {
   private final Drivetrain drivetrain;
@@ -24,7 +24,7 @@ public class AutoRoutines {
   private final SendableChooser<Command> selector = new SendableChooser<Command>();
   private LinkedHashMap<String, PathPlannerTrajectory> paths = new LinkedHashMap<>();
 
-  //EventMaps
+  // EventMaps
   private HashMap<String, Command> eventMapSubCubeTwoPiece = new HashMap<>();
   private HashMap<String, Command> eventMapFarCubeTwoPiece = new HashMap<>();
 
@@ -170,10 +170,13 @@ public class AutoRoutines {
             drivetrain.followPath(paths.get("midCubeandBalance")),
             drivetrain.AutoBalanceCommand()));
 
-        //Two piece
-        routineMap.put("subCubeTwoPiece", drivetrain.followPathwithEvents(paths.get("subCubeTwoPiece"), eventMapSubCubeTwoPiece));
-        routineMap.put("farCubeTwoPiece", drivetrain.followPathwithEvents(paths.get("farCubeTwoPiece"), eventMapFarCubeTwoPiece));
-
+    // Two piece
+    routineMap.put(
+        "subCubeTwoPiece",
+        drivetrain.followPathwithEvents(paths.get("subCubeTwoPiece"), eventMapSubCubeTwoPiece));
+    routineMap.put(
+        "farCubeTwoPiece",
+        drivetrain.followPathwithEvents(paths.get("farCubeTwoPiece"), eventMapFarCubeTwoPiece));
   }
 
   private void loadPaths() {
@@ -243,11 +246,13 @@ public class AutoRoutines {
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
             true));
 
-    //Two piece stuff        
+    // Two piece stuff
     paths.put(
         "subCubeTwoPiece",
         PathPlanner.loadPath(
-            "subCubeTwoPiece", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint), true));
+            "subCubeTwoPiece",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
     eventMapSubCubeTwoPiece.put("eject1", gripper.ejectCommand());
     eventMapSubCubeTwoPiece.put("armdown", arm.gotoState(armState.GROUND));
     eventMapSubCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
@@ -257,13 +262,14 @@ public class AutoRoutines {
     paths.put(
         "farCubeTwoPiece",
         PathPlanner.loadPath(
-            "farCubeTwoPiece", new PathConstraints(kAuto.velConstraint, kAuto.accConstraint), true));
+            "farCubeTwoPiece",
+            new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
+            true));
     eventMapFarCubeTwoPiece.put("eject1", gripper.ejectCommand());
     eventMapFarCubeTwoPiece.put("armdown", arm.gotoState(armState.GROUND));
     eventMapFarCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
     eventMapFarCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
     eventMapFarCubeTwoPiece.put("eject2", gripper.ejectCommand());
-
   }
 
   // Iterate over hashmap and add routines to sendable
