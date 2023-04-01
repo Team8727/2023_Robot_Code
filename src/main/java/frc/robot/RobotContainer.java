@@ -84,7 +84,7 @@ public class RobotContainer {
         .toggleOnTrue(
             new ParallelCommandGroup(
                 armGripperCommands.intakeCommand(() -> armJoystick.getThrottle() < 0.5),
-                indications.intakeStatePublish(armJoystick.getThrottle() < 0.5)));
+                indications.intakeStatePublish(armJoystick.getThrottle() < 0.5).withTimeout(5)));
 
     armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommand());
 

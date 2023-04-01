@@ -476,8 +476,8 @@ public class Drivetrain extends SubsystemBase {
     AprilTagPoseEstimator.setReferencePose(DDPoseEstimator.getEstimatedPosition());
     Optional<EstimatedRobotPose> result = AprilTagPoseEstimator.update();
     if (result.isPresent()) {
-      DDPoseEstimator.addVisionMeasurement(
-          result.get().estimatedPose.toPose2d(), result.get().timestampSeconds);
+      /*DDPoseEstimator.addVisionMeasurement(
+      result.get().estimatedPose.toPose2d(), result.get().timestampSeconds);*/
     }
 
     // Log shit

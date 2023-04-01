@@ -187,7 +187,8 @@ public class Arm extends SubsystemBase {
   public Command gotoState(armState targetState) {
     return this.runOnce(() -> states.set(RobotStates.ARM_MOVE.name()))
         .andThen(new DeferredCommand(() -> gotoStateGenerate(targetState), this))
-        .andThen(this.runOnce(() -> states.set(RobotStates.OFF.name())));
+        .andThen(this.runOnce(() -> states.set(RobotStates.OFF.name())))
+        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
   }
 
   public Command place() {
