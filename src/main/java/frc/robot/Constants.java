@@ -50,8 +50,8 @@ public final class Constants {
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
     public static final double placeDrop = -.18;
-    public static final double velConstraint = 1;
-    public static final double accConstraint = 0.5;
+    public static final double velConstraint = 3;
+    public static final double accConstraint = 2;
   }
 
   public static final class kGripper {
