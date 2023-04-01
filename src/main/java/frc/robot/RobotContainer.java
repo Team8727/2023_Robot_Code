@@ -6,6 +6,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -48,6 +49,7 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    indications.intakeStatePublish(armJoystick.getThrottle() < 0.5);
     arm.encoderStartCommand().schedule();
     drivetrain.setDefaultCommand(
         new UserArcadeDrive(
@@ -82,7 +84,10 @@ public class RobotContainer {
 
     armJoystick
         .button(Bindings.intake)
-        .toggleOnTrue(armGripperCommands.intakeCommand(() -> armJoystick.getThrottle() < 0.5));
+        .toggleOnTrue(
+            new ParallelCommandGroup(
+                armGripperCommands.intakeCommand(() -> armJoystick.getThrottle() < 0.5),
+                indications.intakeStatePublish(armJoystick.getThrottle() < 0.5)));
 
     armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommand());
 

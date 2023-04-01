@@ -4,10 +4,12 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringEntry;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StringTopic;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.kIndications;
 import frc.robot.utilities.LEDSubStrip;
@@ -93,6 +95,13 @@ public class Indications extends SubsystemBase {
           this.monotone(proximalRightStrip, Color.kGreen);
           this.monotone(forearmStrip, Color.kGreen);
         });
+    stateIndications.put(
+        RobotStates.OFF,
+        () -> {
+          this.monotone(proximalLeftStrip, Color.kBlue);
+          this.monotone(proximalRightStrip, Color.kBlue);
+          this.monotone(forearmStrip, Color.kBlue);
+        });
 
     this.currentStateEntry = Indications.getCurrentStateTopic().getEntry(currentState.name());
 
@@ -121,6 +130,16 @@ public class Indications extends SubsystemBase {
           indicationsTable.getStringTopic(Indications.CURRENT_STATE_TOPIC);
     }
     return Indications.currentStateTopic;
+  }
+
+  public Command intakeStatePublish(Boolean gamePieceSelector) {
+    StringPublisher states;
+    states = getCurrentStateTopic().publish();
+    if (gamePieceSelector) {
+      return this.runOnce(() -> states.set(RobotStates.INTAKE_CONE.name()));
+    } else {
+      return this.runOnce(() -> states.set(RobotStates.INTAKE_KUBE.name()));
+    }
   }
 
   /**
@@ -187,9 +206,9 @@ public class Indications extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    monotone(proximalRightStrip, Color.kGreen);
-    monotone(proximalLeftStrip, Color.kGreen);
-    monotone(forearmStrip, Color.kGreen);
+    // monotone(proximalRightStrip, Color.kGreen);
+    // monotone(proximalLeftStrip, Color.kGreen);
+    // monotone(forearmStrip, Color.kGreen);
     armLEDs.setData(armLEDsBuffer);
   }
 

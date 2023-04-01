@@ -13,6 +13,7 @@ import java.util.function.BooleanSupplier;
 public class ArmGripperCommands {
   private Arm arm;
   private Gripper gripper;
+  // private Indications indications;
 
   public ArmGripperCommands(Arm arm, Gripper gripper) {
     this.arm = arm;
