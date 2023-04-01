@@ -96,8 +96,8 @@ public final class Constants {
       public static final long startUpTime = 800;
 
       public static final class Proximal {
-        public static final double initial = Math.PI / 2 + Units.degreesToRadians(17);
-        public static final double offset = -1.505021;
+        public static final double initial = Math.PI / 2 + Units.degreesToRadians(15);
+        public static final double offset = -1.573980;
         public static final double gear_ratio = 50.0 / 18.0 * 12.0 / 44.0;
         public static final int absPort = 9;
         public static final int APort = 7;
@@ -105,8 +105,8 @@ public final class Constants {
       }
 
       public static final class Forearm {
-        public static final double initial = Units.degreesToRadians(-174);
-        public static final double offset = 3.659801;
+        public static final double initial = Units.degreesToRadians(-173);
+        public static final double offset = 4.394337;
         public static final double gear_ratio = 15.0 / 44.0;
         public static final int absPort = 12;
         public static final int APort = 10;
@@ -161,8 +161,8 @@ public final class Constants {
     public static final class Feedback {
       public static final double proximal_kP = 14;
       public static final double proximal_kD = 3;
-      public static final double forearm_kP = 26;
-      public static final double forearm_kD = 3;
+      public static final double forearm_kP = 22;
+      public static final double forearm_kD = 4;
     }
   }
 
