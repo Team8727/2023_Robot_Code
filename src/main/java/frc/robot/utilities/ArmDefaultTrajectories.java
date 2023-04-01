@@ -23,77 +23,28 @@ public class ArmDefaultTrajectories {
   public ArmDefaultTrajectories() {
     try {
       JSONParser parser = new JSONParser();
-      JSONArray jsonArray =
-          (JSONArray)
+      JSONObject jsonTrajectories =
+          (JSONObject)
               parser.parse(
                   new FileReader(
                       new File(Filesystem.getDeployDirectory(), "arm_trajectories.json")));
-      for (Object item : jsonArray) {
-        JSONObject trajectory = (JSONObject) item;
+      for (Object item : jsonTrajectories.keySet()) {
+        JSONObject trajectory = (JSONObject) jsonTrajectories.get(item);
 
-        String name = (String) trajectory.get("name");
-
-        System.out.println(name);
         JSONArray states = (JSONArray) trajectory.get("states");
 
-        trajectories.put(name, new ArmTrajectory(toStateList(states)));
+        trajectories.put((String) item, new ArmTrajectory(toStateList(states)));
       }
     } catch (Exception e) {
-      System.out.println("Fuck\nFuck\nFuck\nFuck");
       System.out.println(e);
     }
-
-    trajectories.put("INIT_HOME", simpleProfile(.07, 0.08, 0.18, 0.16));
-    trajectories.put("HOME_INIT", trajectories.get("INIT_HOME").reverse());
-
-    var start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
-    var mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.45, .16, -0.75, 0.25);
-    var end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, -.08, 0, 0);
-    trajectories.put(
-        "HOME_GROUND", complexProfile(start, mid).concatenate(complexProfile(mid, end)));
-
-    trajectories.put("GROUND_HOME", trajectories.get("HOME_GROUND").reverse());
-
-    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
-    mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
-    end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
-    trajectories.put("L3_HOME", complexProfile(start, mid).concatenate(complexProfile(mid, end)));
-
-    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
-    mid = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.65, .9, 0.7, -1.1);
-    end = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.18, .16, 0, 0);
+    var start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
     var place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22 + kAuto.placeDrop, 0, 0);
     trajectories.put("L3_L3PLACED", linearTrajectory(start, place));
-    trajectories.put(
-        "L3PLACED_HOME", complexProfile(place, mid).concatenate(complexProfile(mid, end)));
-
-    trajectories.put("L2_HOME", simpleProfile(.9, .9, .18, .16));
-    trajectories.put("HOME_L2", trajectories.get("L2_HOME").reverse());
 
     start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9, 0, 0);
     place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9 + kAuto.placeDrop, 0, 0);
     trajectories.put("L2_L2PLACED", linearTrajectory(start, place));
-    trajectories.put("L2PLACED_HOME", simpleProfile(.9, .9 + kAuto.placeDrop, .18, .16));
-
-    trajectories.put("HOME_DOUBLESUB", simpleProfile(.18, 0.16, 0.65, 0.89));
-    trajectories.put("DOUBLESUB_HOME", trajectories.get("HOME_DOUBLESUB").reverse());
-
-    // Neutral trajectories
-
-    trajectories.put("HOME_NEUTRAL", simpleProfile(.17, .16, .49, .49));
-    trajectories.put("NEUTRAL_HOME", simpleProfile(.49, 0.49, 0.18, 0.16));
-
-    trajectories.put("L3_NEUTRAL", simpleProfile(1.2, 1.22, .49, .49));
-    trajectories.put("NEUTRAL_L3", trajectories.get("L3_NEUTRAL").reverse());
-
-    trajectories.put("NEUTRAL_L2", simpleProfile(.49, .49, .9, .9));
-    trajectories.put("L2_NEUTRAL", simpleProfile(.9, .9, .49, .49));
-
-    trajectories.put("NEUTRAL_GROUND", simpleProfile(.49, .49, .65, -.08));
-    trajectories.put("GROUND_NEUTRAL", simpleProfile(.65, -.08, .49, .49));
-
-    trajectories.put("NEUTRAL_DOUBLESUB", simpleProfile(.49, .49, .65, 0.89));
-    trajectories.put("DOUBLESUB_NEUTRAL", simpleProfile(.89, .9, .49, .49));
   }
 
   private List<ArmTrajectory.State> toStateList(JSONArray statesArray) {
@@ -116,21 +67,15 @@ public class ArmDefaultTrajectories {
     return states;
   }
 
-  public ArmTrajectory simpleProfile(double startx, double starty, double endx, double endy) {
-    return new ArmTrajectory(
-        new MatBuilder<N4, N1>(Nat.N4(), Nat.N1()).fill(startx, starty, 0, 0),
-        new MatBuilder<N4, N1>(Nat.N4(), Nat.N1()).fill(endx, endy, 0, 0));
-  }
-
-  public ArmTrajectory complexProfile(Matrix<N4, N1> start, Matrix<N4, N1> end) {
-    return new ArmTrajectory(start, end);
-  }
-
-  public ArmTrajectory linearTrajectory(Matrix<N4, N1> start, Matrix<N4, N1> end) {
+  private ArmTrajectory linearTrajectory(Matrix<N4, N1> start, Matrix<N4, N1> end) {
     return ArmTrajectory.linearArmTrajectory(start.block(2, 1, 0, 0), end.block(2, 1, 0, 0));
   }
 
   public ArmTrajectory getTrajectory(Pair<armState, armState> trajPair) {
     return trajectories.get((trajPair.getFirst().name()) + "_" + trajPair.getSecond().name());
+  }
+
+  public boolean validTrajectory(Pair<armState, armState> trajPair) {
+    return this.getTrajectory(trajPair) != null;
   }
 }
