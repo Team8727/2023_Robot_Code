@@ -17,6 +17,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.system.NumericalIntegration;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleArrayLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -43,6 +44,7 @@ import frc.robot.Constants.kArm.*;
 import frc.robot.Robot;
 import frc.robot.commands.ArmTrajectoryCommand;
 import frc.robot.controls.DoubleJointedArmController;
+import frc.robot.subsystems.Indications.RobotStates;
 import frc.robot.utilities.ArmDefaultTrajectories;
 import frc.robot.utilities.ArmTrajectory;
 import frc.robot.utilities.DeferredCommand;
@@ -135,6 +137,8 @@ public class Arm extends SubsystemBase {
   private DoubleArrayLogEntry logCalculatedVoltages =
       new DoubleArrayLogEntry(log, "/ArmSubsystem/calculatedVoltages");
 
+  private final StringPublisher states;
+
   public Arm() {
     // Hardware init
     motorInit();
@@ -154,6 +158,8 @@ public class Arm extends SubsystemBase {
 
     // Start telemetry
     telemetryInit();
+
+    states = Indications.getCurrentStateTopic().publish();
   }
 
   // -------------------- Arm movement commands --------------------
@@ -179,8 +185,9 @@ public class Arm extends SubsystemBase {
   }
 
   public Command gotoState(armState targetState) {
-    return new DeferredCommand(() -> gotoStateGenerate(targetState), this)
-        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
+    return this.runOnce(() -> states.set(RobotStates.ARM_MOVE.name()))
+        .andThen(new DeferredCommand(() -> gotoStateGenerate(targetState), this))
+        .andThen(this.runOnce(() -> states.set(RobotStates.OFF.name())));
   }
 
   public Command place() {

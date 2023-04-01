@@ -275,13 +275,6 @@ public class AutoRoutines {
   // Iterate over hashmap and add routines to sendable
   private void populateSendable() {
     selector.setDefaultOption("No Auto", routineMap.get("No Auto"));
-    /*Iterator<Entry<String, Command> > newIterator = routineMap.entrySet().iterator();
-    while (newIterator.hasNext()){
-        Map.Entry<String, Command> newMap = (Map.Entry<String, Command>)
-            newIterator.next();
-        System.out.println(newMap.getKey());
-            //selector.addOption(newMap.getKey(), newMap.getValue());
-    }*/
     for (Map.Entry<String, Command> entry : routineMap.entrySet()) {
       selector.addOption(entry.getKey(), entry.getValue());
     }
