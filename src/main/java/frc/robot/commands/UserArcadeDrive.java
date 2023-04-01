@@ -70,9 +70,9 @@ public class UserArcadeDrive extends CommandBase {
     if (precisionInput.getAsBoolean()) {
       speed = Rate.precisionSpeed;
     } else if (boostInput.getAsBoolean()) {
-      states.set(RobotStates.BOOSTMODE.name());
       speed = Rate.maxSpeed;
       rotation /= 4.0;
+      states.set(RobotStates.BOOSTMODE.name());
     }
     double linearSpeed = xSpeed * speed;
     double angularSpeed = zRotation * rotation;
@@ -86,6 +86,6 @@ public class UserArcadeDrive extends CommandBase {
   @Override
   public void end(boolean interrupted) {
     drivetrain.driveChassisSpeeds(new ChassisSpeeds(0, 0, 0));
-    states.set(RobotStates.OFF.name());
+    // states.set(RobotStates.OFF.name());
   }
 }
