@@ -254,7 +254,7 @@ public class AutoRoutines {
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
             true));
     eventMapSubCubeTwoPiece.put("eject1", gripper.ejectCommand());
-    eventMapSubCubeTwoPiece.put("armdown", arm.gotoState(armState.GROUND));
+    eventMapSubCubeTwoPiece.put("armDown", arm.gotoState(armState.GROUND));
     eventMapSubCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
     eventMapSubCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
     eventMapSubCubeTwoPiece.put("eject2", gripper.ejectCommand());
@@ -266,8 +266,8 @@ public class AutoRoutines {
             new PathConstraints(kAuto.velConstraint, kAuto.accConstraint),
             true));
     eventMapFarCubeTwoPiece.put("eject1", gripper.ejectCommand());
-    eventMapFarCubeTwoPiece.put("armdown", arm.gotoState(armState.GROUND));
-    eventMapFarCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
+    eventMapFarCubeTwoPiece.put("armDown", arm.gotoState(armState.GROUND));
+    eventMapFarCubeTwoPiece.put("intake", gripper.intakeCommand().withTimeout(3));
     eventMapFarCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
     eventMapFarCubeTwoPiece.put("eject2", gripper.ejectCommand());
   }
