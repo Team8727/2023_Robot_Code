@@ -219,7 +219,6 @@ public class Arm extends SubsystemBase {
 
   private Command placeGenerate() {
     if (state == armState.L3) {
-      System.out.println("Fucking clown \n\n Fucking Clown");
       return presetTrajectory(new Pair<armState, armState>(armState.L3, armState.L3PLACED));
     } else if (state == armState.L2) {
       return presetTrajectory(new Pair<armState, armState>(armState.L2, armState.L2PLACED));
@@ -229,40 +228,20 @@ public class Arm extends SubsystemBase {
   private Command gotoStateGenerate(armState targetState) {
     // Do nothing if already at state
     if (targetState == state) return new WaitCommand(0);
-    ArmTrajectory trajectory = new ArmTrajectory();
-    armState trajState = state;
+    var trajectory = new ArmTrajectory();
 
-    // Move from starting configuration to home position if necessary
-    if (state == armState.INIT && targetState != armState.HOME) {
-      trajectory =
-          trajectory.concatenate(
-              trajectoryMap.getTrajectory(
-                  new Pair<armState, armState>(armState.INIT, armState.HOME)));
-      trajState = armState.HOME;
-    }
-
-    // Don't allow illegal trajectories
-    if (state == armState.L3PLACED || state == armState.L2PLACED) {
+    if (trajectoryMap.validTrajectory(new Pair<armState, armState>(state, targetState))) {
+      trajectory = trajectoryMap.getTrajectory(new Pair<armState, armState>(state, targetState));
+    } else {
+      trajectory = trajectoryMap.getTrajectory(new Pair<armState, armState>(state, armState.HOME));
       targetState = armState.HOME;
     }
 
-    // Go through neutral or go to/from home
-    if (trajState != armState.HOME && targetState != armState.HOME) {
-      trajectory =
-          trajectory.concatenate(
-              trajectoryMap.getTrajectory(
-                  new Pair<armState, armState>(trajState, armState.NEUTRAL)));
-      trajectory =
-          trajectory.concatenate(
-              trajectoryMap.getTrajectory(
-                  new Pair<armState, armState>(armState.NEUTRAL, targetState)));
-    } else {
-      trajectory =
-          trajectory.concatenate(
-              trajectoryMap.getTrajectory(new Pair<armState, armState>(trajState, targetState)));
-    }
-
     var endState = targetState;
+
+    System.out.println(targetState);
+    System.out.println(trajectory);
+
     // Return a trajectory command
     return new ArmTrajectoryCommand(trajectory, this)
         .andThen(() -> state = endState)
