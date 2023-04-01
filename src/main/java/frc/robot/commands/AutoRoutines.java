@@ -257,7 +257,7 @@ public class AutoRoutines {
     eventMapSubCubeTwoPiece.put("armDown", arm.gotoState(armState.GROUND));
     eventMapSubCubeTwoPiece.put("intakeDown", gripper.intakeCommand().withTimeout(3));
     eventMapSubCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
-    eventMapSubCubeTwoPiece.put("eject2", gripper.ejectCommand());
+    eventMapSubCubeTwoPiece.put("eject2", gripper.yeet());
 
     paths.put(
         "farCubeTwoPiece",
@@ -269,7 +269,7 @@ public class AutoRoutines {
     eventMapFarCubeTwoPiece.put("armDown", arm.gotoState(armState.GROUND));
     eventMapFarCubeTwoPiece.put("intake", gripper.intakeCommand().withTimeout(3));
     eventMapFarCubeTwoPiece.put("armUp", arm.gotoState(armState.HOME));
-    eventMapFarCubeTwoPiece.put("eject2", gripper.ejectCommand());
+    eventMapFarCubeTwoPiece.put("eject2", gripper.yeet());
   }
 
   // Iterate over hashmap and add routines to sendable

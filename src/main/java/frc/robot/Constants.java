@@ -65,7 +65,7 @@ public final class Constants {
     public static final double holdingVoltageKube = 0.6;
     public static final int stallCurrentLimit = 7;
     public static final int freeCurrentLimit = 12;
-    public static final double ejectTime = 0.35;
+    public static final double ejectTime = 0.6;
   }
 
   public static final class kArm {
@@ -96,7 +96,7 @@ public final class Constants {
       public static final long startUpTime = 800;
 
       public static final class Proximal {
-        public static final double initial = Math.PI / 2 + Units.degreesToRadians(15);
+        public static final double initial = Math.PI / 2 + Units.degreesToRadians(14);
         public static final double offset = -1.573980;
         public static final double gear_ratio = 50.0 / 18.0 * 12.0 / 44.0;
         public static final int absPort = 9;
@@ -105,7 +105,7 @@ public final class Constants {
       }
 
       public static final class Forearm {
-        public static final double initial = Units.degreesToRadians(-173);
+        public static final double initial = Units.degreesToRadians(-174);
         public static final double offset = 4.394337;
         public static final double gear_ratio = 15.0 / 44.0;
         public static final int absPort = 12;

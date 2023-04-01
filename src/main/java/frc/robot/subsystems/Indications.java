@@ -15,6 +15,7 @@ import frc.robot.Constants.kIndications;
 import frc.robot.utilities.LEDSubStrip;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.function.BooleanSupplier;
 
 public class Indications extends SubsystemBase {
 
@@ -31,6 +32,7 @@ public class Indications extends SubsystemBase {
   private HashMap<RobotStates, Indicator> stateIndications;
   private StringEntry currentStateEntry;
   private RobotStates currentState = RobotStates.OFF;
+  private BooleanSupplier gamepieceSelector = null;
 
   public enum RobotStates {
     OFF,
@@ -114,6 +116,10 @@ public class Indications extends SubsystemBase {
                 tryIndicating(event.valueData.value.getString());
               }
             });
+  }
+
+  public void setGamePiece(BooleanSupplier supplier) {
+    this.gamepieceSelector = supplier;
   }
 
   public static StringTopic getCurrentStateTopic() {
@@ -209,6 +215,15 @@ public class Indications extends SubsystemBase {
     // monotone(proximalRightStrip, Color.kGreen);
     // monotone(proximalLeftStrip, Color.kGreen);
     // monotone(forearmStrip, Color.kGreen);
+    if (gamepieceSelector.getAsBoolean()) {
+      monotone(forearmStrip, Color.kYellow);
+      monotone(proximalLeftStrip, Color.kYellow);
+      monotone(proximalRightStrip, Color.kYellow);
+    } else {
+      monotone(forearmStrip, Color.kPurple);
+      monotone(proximalLeftStrip, Color.kPurple);
+      monotone(proximalRightStrip, Color.kPurple);
+    }
     armLEDs.setData(armLEDsBuffer);
   }
 
