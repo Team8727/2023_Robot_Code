@@ -8,7 +8,6 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.Constants.armState;
-import frc.robot.Constants.kAuto;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,13 +37,14 @@ public class ArmDefaultTrajectories {
     } catch (Exception e) {
       System.out.println(e);
     }
-    var start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
+
+    /*var start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
     var place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22 + kAuto.placeDrop, 0, 0);
     trajectories.put("L3_L3PLACED", linearTrajectory(start, place));
 
     start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9, 0, 0);
     place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9 + kAuto.placeDrop, 0, 0);
-    trajectories.put("L2_L2PLACED", linearTrajectory(start, place));
+    trajectories.put("L2_L2PLACED", linearTrajectory(start, place));*/
   }
 
   private List<ArmTrajectory.State> toStateList(JSONArray statesArray) {
