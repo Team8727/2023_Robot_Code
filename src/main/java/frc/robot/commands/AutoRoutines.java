@@ -94,7 +94,7 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.mobilityAuto()));
+            drivetrain.followPath(paths.get("subCubeMobility"))));
     routineMap.put(
         "subConeMobilityandBalance",
         new SequentialCommandGroup(
@@ -122,7 +122,7 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.mobilityAuto()));
+            drivetrain.followPath(paths.get("farConeMobility"))));
     routineMap.put(
         "farCubeMobility",
         new SequentialCommandGroup(
@@ -130,7 +130,7 @@ public class AutoRoutines {
             arm.gotoState(armState.L3),
             armGripperCommands.placeCommand(),
             arm.gotoState(armState.HOME),
-            drivetrain.mobilityAuto()));
+            drivetrain.followPath(paths.get("farCubeMobility"))));
     routineMap.put(
         "farConeMobilityandBalance",
         new SequentialCommandGroup(

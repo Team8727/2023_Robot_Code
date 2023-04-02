@@ -58,6 +58,8 @@ public class RobotContainer {
 
     // Post sendable chooser for auto
     Shuffleboard.getTab("Auto").add("Auto selector", autoRoutines.getChooser()).withSize(3, 1);
+    indications.setGamePiece(() -> armJoystick.getThrottle() < 0.5);
+    indications.setBoost(() -> driverController.getRightTriggerAxis() > 0.1);
 
     // Configure the trigger bindings
     configureBindings();

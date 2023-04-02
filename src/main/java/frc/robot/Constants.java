@@ -46,7 +46,7 @@ public final class Constants {
     public static final double chargeTipSpeed = -4;
     public static final double chargeCreepVoltage = -1.25;
     public static final double chargeStopAngle = -11;
-    public static final double tipTimeout = 1.75;
+    public static final double tipTimeout = 1.65;
     public static final double creepTimeout = 8;
     public static final double mobilityTime = 8;
     public static final double placeDrop = -.18;
@@ -105,7 +105,7 @@ public final class Constants {
       }
 
       public static final class Forearm {
-        public static final double initial = Units.degreesToRadians(-174);
+        public static final double initial = Units.degreesToRadians(-176);
         public static final double offset = 4.394337;
         public static final double gear_ratio = 15.0 / 44.0;
         public static final int absPort = 12;
@@ -161,8 +161,8 @@ public final class Constants {
     public static final class Feedback {
       public static final double proximal_kP = 14;
       public static final double proximal_kD = 3;
-      public static final double forearm_kP = 22;
-      public static final double forearm_kD = 4;
+      public static final double forearm_kP = 17;
+      public static final double forearm_kD = 2;
     }
   }
 
