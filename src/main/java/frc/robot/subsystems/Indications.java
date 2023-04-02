@@ -28,11 +28,13 @@ public class Indications extends SubsystemBase {
 
   public static final String INDICATIONS_TABLE = "Indications";
   public static final String CURRENT_STATE_TOPIC = "/states/current";
+  private double count = 0;
   private static StringTopic currentStateTopic;
   private HashMap<RobotStates, Indicator> stateIndications;
   private StringEntry currentStateEntry;
   private RobotStates currentState = RobotStates.OFF;
   private BooleanSupplier gamepieceSelector = null;
+  private BooleanSupplier boostSupplier = null;
 
   public enum RobotStates {
     OFF,
@@ -86,9 +88,9 @@ public class Indications extends SubsystemBase {
     stateIndications.put(
         RobotStates.INTAKE_CONE,
         () -> {
-          this.monotone(proximalLeftStrip, Color.kYellow);
-          this.monotone(proximalRightStrip, Color.kYellow);
-          this.monotone(forearmStrip, Color.kYellow);
+          this.monotone(proximalLeftStrip, Color.kLightGoldenrodYellow);
+          this.monotone(proximalRightStrip, Color.kLightGoldenrodYellow);
+          this.monotone(forearmStrip, Color.kLightGoldenrodYellow);
         });
     stateIndications.put(
         RobotStates.BOOSTMODE,
@@ -120,6 +122,10 @@ public class Indications extends SubsystemBase {
 
   public void setGamePiece(BooleanSupplier supplier) {
     this.gamepieceSelector = supplier;
+  }
+
+  public void setBoost(BooleanSupplier supplier) {
+    this.boostSupplier = supplier;
   }
 
   public static StringTopic getCurrentStateTopic() {
@@ -186,7 +192,7 @@ public class Indications extends SubsystemBase {
   public void flashing(LEDSubStrip section, Color color, int interval) {
     for (int i = 0; i <= section.getLength(); i++) {
       // turns the LEDs onn if the interval is one
-      if ((interval % 2) == 1) {
+      if ((count % (2 * interval)) < interval) {
         section.setLED(i, color);
       } else {
         // sets the LEDs off
@@ -212,19 +218,21 @@ public class Indications extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    // monotone(proximalRightStrip, Color.kGreen);
-    // monotone(proximalLeftStrip, Color.kGreen);
-    // monotone(forearmStrip, Color.kGreen);
-    if (gamepieceSelector.getAsBoolean()) {
-      monotone(forearmStrip, Color.kYellow);
-      monotone(proximalLeftStrip, Color.kYellow);
-      monotone(proximalRightStrip, Color.kYellow);
+    if (boostSupplier.getAsBoolean()) {
+      flashing(forearmStrip, Color.kGreen, 10);
+      monotone(proximalLeftStrip, Color.kGreen);
+      monotone(proximalRightStrip, Color.kGreen);
+    } else if (gamepieceSelector.getAsBoolean()) {
+      monotone(forearmStrip, new Color(255, 150, 3));
+      monotone(proximalLeftStrip, new Color(255, 150, 3));
+      monotone(proximalRightStrip, new Color(255, 150, 3));
     } else {
       monotone(forearmStrip, Color.kPurple);
       monotone(proximalLeftStrip, Color.kPurple);
       monotone(proximalRightStrip, Color.kPurple);
     }
     armLEDs.setData(armLEDsBuffer);
+    count = (count + 1) % 50;
   }
 
   @Override
