@@ -1,7 +1,6 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import frc.robot.Constants.GamePiece;
 import frc.robot.Constants.armState;
@@ -21,10 +20,10 @@ public class ArmGripperCommands {
   }
 
   public Command placeCommand() {
-    return arm.place()
-        .andThen(gripper.ejectCommand())
-        .andThen(arm.gotoState(armState.HOME))
-        .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
+    return new ConditionalCommand(
+        arm.place().andThen(gripper.ejectCommand()).andThen(arm.gotoState(armState.HOME)),
+        gripper.ejectCommand().andThen(arm.gotoState(armState.HOME)),
+        () -> gripper.getGamePiece() == GamePiece.CONE);
   }
 
   public Command intakeCommand(BooleanSupplier gamePieceSelector) {

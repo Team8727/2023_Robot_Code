@@ -50,6 +50,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants.CanId;
 import frc.robot.Constants.OperatorInterface.DeadZones;
 import frc.robot.Constants.kAuto;
@@ -144,6 +145,10 @@ public class Drivetrain extends SubsystemBase {
   private DoubleArrayLogEntry logPhotonPose = new DoubleArrayLogEntry(log, "Drivetrain/photonPose");
   private DoubleLogEntry logGyro = new DoubleLogEntry(log, "Drivetrain/gyro");
   private DoubleLogEntry logGyroPitch = new DoubleLogEntry(log, "Drivetrain/gyroPitch");
+  private DoubleLogEntry logGyroYaw = new DoubleLogEntry(log, "Drivetrain/gyroYaw");
+  private DoubleLogEntry logGyroAccX = new DoubleLogEntry(log, "Drivetrain/gyroAcc");
+  private DoubleLogEntry logGyroAccY = new DoubleLogEntry(log, "Drivetrain/gyroAcc");
+  private DoubleLogEntry logGyroAccZ = new DoubleLogEntry(log, "Drivetrain/gyroAcc");
 
   // TEMPORARY
   private DoubleArrayLogEntry rawEncoderCounts =
@@ -198,18 +203,42 @@ public class Drivetrain extends SubsystemBase {
     return new UserArcadeDrive(linearSupplier, angularSupplier, boostSupplier, this);
   }
 
-  public Command AutoBalanceCommand() {
+  public Command BackwardAutoBalanceCommand() {
     return this.run(
             () ->
                 driveWheelSpeeds(
-                    new DifferentialDriveWheelSpeeds(kAuto.chargeTipSpeed, kAuto.chargeTipSpeed)))
-        .withTimeout(kAuto.tipTimeout)
+                    new DifferentialDriveWheelSpeeds(
+                        kAuto.backwardsChargeTipSpeed, kAuto.backwardsChargeTipSpeed)))
+        .withTimeout(kAuto.backwardsTipTimeout - .2)
+        .andThen(() -> driveVoltages(-3, -3))
+        .andThen(new WaitCommand(.2))
         .andThen(
             this.startEnd(
-                    () -> driveVoltages(kAuto.chargeCreepVoltage, kAuto.chargeCreepVoltage),
+                    () ->
+                        driveVoltages(
+                            kAuto.backwardsChargeCreepVoltage, kAuto.backwardsChargeCreepVoltage),
                     () -> driveVoltages(0, 0))
-                .until(() -> getRoll() > kAuto.chargeStopAngle)
-                .withTimeout(kAuto.creepTimeout));
+                .until(() -> getRoll() > kAuto.backwardsChargeStopAngle)
+                .withTimeout(kAuto.backwardsCreepTimeout));
+  }
+
+  public Command ForwardAutoBalanceCommand() {
+    return this.run(
+            () ->
+                driveWheelSpeeds(
+                    new DifferentialDriveWheelSpeeds(
+                        kAuto.forwardsChargeTipSpeed, kAuto.forwardsChargeTipSpeed)))
+        .until(() -> getAccelX() < -1.0)
+        .andThen(() -> driveWheelSpeeds(new DifferentialDriveWheelSpeeds(2, 2)))
+        .withTimeout(1)
+        .andThen(
+            this.startEnd(
+                    () ->
+                        driveVoltages(
+                            kAuto.backwardsChargeCreepVoltage, kAuto.backwardsChargeCreepVoltage),
+                    () -> driveVoltages(0, 0))
+                .until(() -> getRoll() > kAuto.backwardsChargeStopAngle)
+                .withTimeout(kAuto.backwardsCreepTimeout));
   }
 
   public FollowPathWithEvents followPathwithEvents(
@@ -360,9 +389,9 @@ public class Drivetrain extends SubsystemBase {
 
     driveVoltages(
         DDFeedforward.calculate(
-            lastSpeeds.leftMetersPerSecond,
             limitedWheelSpeeds.leftMetersPerSecond,
-            lastSpeeds.rightMetersPerSecond,
+            limitedWheelSpeeds.leftMetersPerSecond,
+            limitedWheelSpeeds.rightMetersPerSecond,
             limitedWheelSpeeds.rightMetersPerSecond,
             20.0 / 1000.0));
     lastSpeeds = limitedWheelSpeeds;
@@ -412,6 +441,18 @@ public class Drivetrain extends SubsystemBase {
 
   public double getAngle() {
     return Units.degreesToRadians(-gyro.getYaw());
+  }
+
+  public double getAccelX() {
+    return gyro.getWorldLinearAccelX();
+  }
+
+  public double getAccelY() {
+    return gyro.getWorldLinearAccelY();
+  }
+
+  public double getAccelZ() {
+    return gyro.getWorldLinearAccelZ();
   }
 
   public Rotation2d getAngle2d() {
@@ -489,6 +530,11 @@ public class Drivetrain extends SubsystemBase {
         });
     logGyro.append(getAngle());
     logGyroPitch.append(getRoll());
+    logGyroYaw.append(getAngle());
+    logGyroAccX.append(getAccelX());
+    logGyroAccY.append(getAccelY());
+    logGyroAccZ.append(getAccelZ());
+
     var estimatedPose = DDPoseEstimator.getEstimatedPosition();
     logPoseEstimate.append(
         new double[] {
