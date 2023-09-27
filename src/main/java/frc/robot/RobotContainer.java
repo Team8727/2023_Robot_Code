@@ -4,14 +4,18 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Constants.GamePiece;
 import frc.robot.Constants.OperatorInterface;
-import frc.robot.Constants.OperatorInterface.Bindings;
 import frc.robot.Constants.armState;
 import frc.robot.commands.ArmGripperCommands;
 import frc.robot.commands.AutoRoutines;
@@ -54,12 +58,11 @@ public class RobotContainer {
         drivetrain.TeleopDriveCommand(
             () -> -driverController.getLeftY(),
             () -> -driverController.getRightX(),
-            () -> driverController.getRightTriggerAxis() > 0.1));
+            () -> driverController.getLeftTriggerAxis() > 0.1));
 
     // Post sendable chooser for auto
     Shuffleboard.getTab("Auto").add("Auto selector", autoRoutines.getChooser()).withSize(3, 1);
-    indications.setGamePiece(() -> armJoystick.getThrottle() < 0.5);
-    indications.setBoost(() -> driverController.getRightTriggerAxis() > 0.1);
+    indications.setBoost(() -> driverController.getLeftTriggerAxis() > 0.1);
 
     // Configure the trigger bindings
     configureBindings();
@@ -75,20 +78,33 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    armJoystick.button(Bindings.home).onTrue(arm.gotoState(armState.HOME));
-    armJoystick.button(Bindings.ground).onTrue(arm.gotoState(armState.GROUND));
-    armJoystick.button(Bindings.L2).onTrue(arm.gotoState(armState.L2));
-    armJoystick.button(Bindings.L3).onTrue(arm.gotoState(armState.L3));
-    armJoystick.button(Bindings.doublesub).onTrue(arm.gotoState(armState.DOUBLESUB));
+    driverController.rightBumper().onTrue(arm.gotoState(armState.HOME));
+    driverController.a().onTrue(arm.gotoState(armState.GROUND));
+    driverController.x().onTrue(arm.gotoState(armState.L2));
+    driverController.y().onTrue(arm.gotoState(armState.L3));
+    driverController.b().onTrue(arm.gotoState(armState.DOUBLESUB));
+    driverController.rightStick().onTrue(gripper.yeet());
+    driverController.leftStick().onTrue(gripper.ejectCommand());
 
-    armJoystick
-        .button(Bindings.intake)
-        .toggleOnTrue(
+    driverController
+        .axisGreaterThan(3, 0.1)
+        .whileTrue(
             new ParallelCommandGroup(
-                armGripperCommands.intakeCommand(() -> armJoystick.getThrottle() < 0.5),
-                indications.intakeStatePublish(armJoystick.getThrottle() < 0.5).withTimeout(5)));
+                    gripper.intakeCommand(GamePiece.CONE),
+                    indications.intakeStatePublish(armJoystick.getThrottle() < 0.5).withTimeout(5))
+                .andThen(
+                    new ConditionalCommand(
+                        new StartEndCommand(
+                                () ->
+                                    driverController.getHID().setRumble(RumbleType.kBothRumble, 1),
+                                () ->
+                                    driverController.getHID().setRumble(RumbleType.kBothRumble, 0),
+                                gripper)
+                            .withTimeout(0.2),
+                        new WaitCommand(0),
+                        () -> gripper.getGamePiece() != GamePiece.NONE)));
 
-    armJoystick.button(Bindings.place).onTrue(armGripperCommands.placeCommand());
+    driverController.leftBumper().onTrue(armGripperCommands.placeCommand());
 
     armJoystick.pov(0).whileTrue(new TurretManual(() -> -armJoystick.getTwist(), arm));
     armJoystick.pov(180).onTrue(arm.turretHome());

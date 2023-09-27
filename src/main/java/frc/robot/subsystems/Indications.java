@@ -33,7 +33,6 @@ public class Indications extends SubsystemBase {
   private HashMap<RobotStates, Indicator> stateIndications;
   private StringEntry currentStateEntry;
   private RobotStates currentState = RobotStates.OFF;
-  private BooleanSupplier gamepieceSelector = null;
   private BooleanSupplier boostSupplier = null;
 
   public enum RobotStates {
@@ -83,7 +82,7 @@ public class Indications extends SubsystemBase {
         () -> {
           this.monotone(proximalLeftStrip, Color.kPurple);
           this.monotone(proximalRightStrip, Color.kPurple);
-          this.monotone(forearmStrip, Color.kPurple);
+          this.flashing(forearmStrip, Color.kPurple, 1);
         });
     stateIndications.put(
         RobotStates.INTAKE_CONE,
@@ -120,10 +119,6 @@ public class Indications extends SubsystemBase {
             });
   }
 
-  public void setGamePiece(BooleanSupplier supplier) {
-    this.gamepieceSelector = supplier;
-  }
-
   public void setBoost(BooleanSupplier supplier) {
     this.boostSupplier = supplier;
   }
@@ -153,7 +148,6 @@ public class Indications extends SubsystemBase {
       return this.runOnce(() -> states.set(RobotStates.INTAKE_KUBE.name()));
     }
   }
-
   /**
    * Use LED indicators to display the state of the robot
    *
@@ -217,19 +211,14 @@ public class Indications extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // This method will be called once per scheduler run
     if (boostSupplier.getAsBoolean()) {
-      flashing(forearmStrip, Color.kGreen, 10);
-      monotone(proximalLeftStrip, Color.kGreen);
-      monotone(proximalRightStrip, Color.kGreen);
-    } else if (gamepieceSelector.getAsBoolean()) {
-      monotone(forearmStrip, new Color(255, 150, 3));
-      monotone(proximalLeftStrip, new Color(255, 150, 3));
-      monotone(proximalRightStrip, new Color(255, 150, 3));
+      this.monotone(proximalLeftStrip, Color.kWhite);
+      this.monotone(proximalRightStrip, Color.kWhite);
+      this.flashing(forearmStrip, Color.kGreen, 5);
     } else {
-      monotone(forearmStrip, Color.kPurple);
-      monotone(proximalLeftStrip, Color.kPurple);
-      monotone(proximalRightStrip, Color.kPurple);
+      this.monotone(proximalLeftStrip, Color.kGreen);
+      this.monotone(proximalRightStrip, Color.kGreen);
+      this.monotone(forearmStrip, Color.kGreen);
     }
     armLEDs.setData(armLEDsBuffer);
     count = (count + 1) % 50;

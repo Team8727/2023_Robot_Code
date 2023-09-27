@@ -26,7 +26,7 @@ public class ArmDefaultTrajectories {
           (JSONObject)
               parser.parse(
                   new FileReader(
-                      new File(Filesystem.getDeployDirectory(), "arm_trajectories.json")));
+                      new File(Filesystem.getDeployDirectory(), "arm_trajectories_blazing.json")));
       for (Object item : jsonTrajectories.keySet()) {
         JSONObject trajectory = (JSONObject) jsonTrajectories.get(item);
 
@@ -37,14 +37,6 @@ public class ArmDefaultTrajectories {
     } catch (Exception e) {
       System.out.println(e);
     }
-
-    /*var start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22, 0, 0);
-    var place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(1.2, 1.22 + kAuto.placeDrop, 0, 0);
-    trajectories.put("L3_L3PLACED", linearTrajectory(start, place));
-
-    start = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9, 0, 0);
-    place = new MatBuilder<>(Nat.N4(), Nat.N1()).fill(.9, .9 + kAuto.placeDrop, 0, 0);
-    trajectories.put("L2_L2PLACED", linearTrajectory(start, place));*/
   }
 
   private List<ArmTrajectory.State> toStateList(JSONArray statesArray) {
@@ -65,10 +57,6 @@ public class ArmDefaultTrajectories {
     }
 
     return states;
-  }
-
-  private ArmTrajectory linearTrajectory(Matrix<N4, N1> start, Matrix<N4, N1> end) {
-    return ArmTrajectory.linearArmTrajectory(start.block(2, 1, 0, 0), end.block(2, 1, 0, 0));
   }
 
   public ArmTrajectory getTrajectory(Pair<armState, armState> trajPair) {

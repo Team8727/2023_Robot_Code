@@ -43,11 +43,19 @@ public final class Constants {
   }
 
   public static final class kAuto {
-    public static final double chargeTipSpeed = -4;
-    public static final double chargeCreepVoltage = -1.25;
-    public static final double chargeStopAngle = -11;
-    public static final double tipTimeout = 1.65;
-    public static final double creepTimeout = 8;
+    // Backwards Constants
+    public static final double backwardsChargeTipSpeed = -4;
+    public static final double backwardsChargeCreepVoltage = -1.25;
+    public static final double backwardsChargeStopAngle = -10;
+    public static final double backwardsTipTimeout = 1.7;
+    public static final double backwardsCreepTimeout = 8;
+    // Forward Constants
+    public static final double forwardsChargeTipSpeed = 3;
+    public static final double forwardsChargeCreepVoltage = 1.25;
+    public static final double forwardsChargeStopAngle = 11;
+    public static final double forwardsTipTimeout = 1.65;
+    public static final double forwardsCreepTimeout = 8;
+
     public static final double mobilityTime = 8;
     public static final double placeDrop = -.18;
     public static final double velConstraint = 3;
@@ -106,7 +114,7 @@ public final class Constants {
 
       public static final class Forearm {
         public static final double initial = Units.degreesToRadians(-176);
-        public static final double offset = 4.394337;
+        public static final double offset = 4.41;
         public static final double gear_ratio = 15.0 / 44.0;
         public static final int absPort = 12;
         public static final int APort = 10;
